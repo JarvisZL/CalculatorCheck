@@ -2,4 +2,6 @@
     <string name="app_name">ProjectOne</string>
     <string name="Camera">Camera</string>
     <string name="Testing">Test</string>
+    <string name="Check">Check</string>
+    <string name="Text">Camera to take photo and Check to recognize</string>
 </resources>
