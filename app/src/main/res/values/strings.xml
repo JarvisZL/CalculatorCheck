@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">ProjectOne</string>
     <string name="Camera">Camera</string>
+    <string name="Testing">Test</string>
 </resources>
