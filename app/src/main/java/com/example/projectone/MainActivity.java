@@ -9,6 +9,8 @@ import android.Manifest;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -105,7 +107,9 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         fileInputStream = new FileInputStream(filepath);
                         Bitmap bitmap = BitmapFactory.decodeStream(fileInputStream);
-                        image.setImageBitmap(bitmap);
+                        int degree = getBitmapdgree(filepath);
+                        Bitmap bmp = rotateBitmap(bitmap,degree);
+                        image.setImageBitmap(bmp);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     } finally {
@@ -120,4 +124,50 @@ public class MainActivity extends AppCompatActivity {
             }
 
     }
+
+    private Bitmap rotateBitmap(Bitmap bitmap, int degree) {
+        Bitmap ret = null;
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degree);
+        try {
+          ret = Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight(),matrix,true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if(ret == null){
+            ret = bitmap;
+        }
+        if(ret != bitmap){
+            bitmap.recycle();
+        }
+        return ret;
+    }
+
+    private int getBitmapdgree(String filepath) {
+         int ret = 0;
+         try {
+             ExifInterface exifInterface = new ExifInterface(filepath);
+             int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION,ExifInterface.ORIENTATION_NORMAL);
+             switch (orientation){
+                 case ExifInterface.ORIENTATION_ROTATE_90:
+                     ret = 90;
+                     break;
+                 case ExifInterface.ORIENTATION_ROTATE_180:
+                     ret = 180;
+                     break;
+                 case ExifInterface.ORIENTATION_ROTATE_270:
+                     ret = 270;
+                     break;
+                 default:
+                     break;
+             }
+
+         } catch (IOException e) {
+             e.printStackTrace();
+         }
+         Log.i(TAG, String.valueOf(ret));
+         return ret;
+    }
+
+
 }
