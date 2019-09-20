@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,13 +16,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.media.ExifInterface;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
-
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +30,7 @@ import java.io.IOException;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE = 1;
-    Button button1,button2;
+    Button checkbutton,button2;
     ImageView image;
     File file;
 
@@ -51,23 +50,11 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE);
 
-      //  button1 = findViewById(R.id.button1);
+
         image = findViewById(R.id.image);
         button2 = findViewById(R.id.button2);
         filepath = Environment.getExternalStorageDirectory().getPath();
         filepath = filepath + "/Pictures/" +"temp.png";
-
-        /*
-        button1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent();
-                intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
-              //  intent.addCategory(Intent.CATEGORY_DEFAULT);
-                startActivityForResult(intent,TAKE_PHOTO1);
-            }
-        });
-         */
 
         button2.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -83,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
                 }catch (IOException e){
                     e.printStackTrace();
                 }
-                Uri  imguri;
+                Uri imguri;
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
                     imguri = FileProvider.getUriForFile(MainActivity.this,"com.example.projectone.fileprovider",file);
                 }
@@ -171,6 +158,5 @@ public class MainActivity extends AppCompatActivity {
          Log.i(TAG, String.valueOf(ret));
          return ret;
     }
-
 
 }
