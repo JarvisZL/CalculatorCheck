@@ -21,6 +21,12 @@
         android:layout_marginTop="20dp"
         android:id="@+id/button2"
         android:text="@string/Camera"/>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:id="@+id/choose"
+        android:text="@string/choose_from_album"/>
 
     <Button
         android:layout_marginTop="20dp"

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +21,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
 
+import org.opencv.android.OpenCVLoader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,14 +30,23 @@ import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
+
+
     private static final int REQUEST_CODE = 1;
-    Button check,camera;
+    Button check,camera,choose;
     ImageView image;
     File file;
 
     private static String filepath;
     private static final int TAKE_PHOTO = 200;
+    private static final int CHOOSE_PHOTO = 100;
     private static final String TAG="JARVIS IN MAIN";
+
+    static {
+        if(!OpenCVLoader.initDebug()){
+            Log.i(TAG,"Opencv faied");
+        }
+    }
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     @Override
@@ -49,12 +61,13 @@ public class MainActivity extends AppCompatActivity {
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE);
 
 
+        choose  = findViewById(R.id.choose);
         check  = findViewById(R.id.button3);
         image = findViewById(R.id.image);
         camera = findViewById(R.id.button2);
         //Inner Storage in mobile
         filepath = Environment.getExternalStorageDirectory().getPath();
-        filepath = filepath + "/Pictures/" +"temp.png";
+        filepath = filepath + "/ZLYTEST/" +"temp.png";
 
         camera.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -83,6 +96,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        choose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent,CHOOSE_PHOTO);
+            }
+        });
+
 
         check.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -92,12 +113,18 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else{
                     Log.i(TAG,"not null");
-                    Intent intent = new Intent(MainActivity.this,PictureHandle.class);
-                    intent.putExtra(PictureHandle.EXTRA_PHOTO,FileProvider.getUriForFile(MainActivity.this,"com.example.projectone.fileprovider",file));
+                    Intent intent = new Intent(MainActivity.this,PictureShow.class);
+                    //from file to Uri
+                    //  intent.putExtra(PictureShow.EXTRA_PHOTO,FileProvider.getUriForFile(MainActivity.this,"com.example.projectone.fileprovider",file));
+                   //from imageview to Uri
+                    Bitmap bitmap = ((BitmapDrawable) image.getDrawable()).getBitmap();
+                    Uri uri = Uri.parse(MediaStore.Images.Media.insertImage(getContentResolver(),bitmap,null,null));
+                    intent.putExtra(PictureShow.EXTRA_PHOTO,uri);
                     startActivity(intent);
                 }
             }
         });
+
     }
 
     @Override
@@ -111,8 +138,8 @@ public class MainActivity extends AppCompatActivity {
                         fileInputStream = new FileInputStream(filepath);
                         Bitmap bitmap = BitmapFactory.decodeStream(fileInputStream);
                         int degree = PictureRotate.getBitmapdgree(filepath);
-                        Bitmap bmp = PictureRotate.rotateBitmap(bitmap,degree);
-                        image.setImageBitmap(bmp);
+                        bitmap = PictureRotate.rotateBitmap(bitmap,degree);
+                        image.setImageBitmap(bitmap);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     } finally {
@@ -123,7 +150,20 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
-                }
+               }else if(requestCode == CHOOSE_PHOTO){
+                   Bitmap bitmap = null;
+                   try {
+                       Uri uri = data.getData();
+                      try {
+                         bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),uri);
+                      }catch (FileNotFoundException e) {
+                          e.printStackTrace();
+                      }
+                      image.setImageBitmap(bitmap);
+                   } catch (Exception e) {
+                       e.printStackTrace();
+                   }
+               }
             }
 
     }
