@@ -1,14 +1,35 @@
 package com.example.projectone;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
+
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 public class PictureHandle {
 
     public static final int FILTER_OSTU = 1;
-    public static final int FILTER_ONLY = 2;
-    public static final int FILTER_ITERATOR = 3;
-    public static final int FILTER_MAXTRIX = 4;
+
+
+    public static Bitmap BinarizationWithDenoising(Bitmap bitmap,int d){
+        Bitmap result = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Mat origin = new Mat();
+        Mat gray = new Mat();
+        Mat bf = new Mat();
+        Mat out = new Mat();
+        Utils.bitmapToMat(bitmap, origin);
+        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGB2GRAY);
+        // 去燥
+        Imgproc.bilateralFilter(gray, bf, d, (double) (d * 2), (double) (d / 2));
+        Imgproc.adaptiveThreshold(bf, out, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 25, 10.0D);
+        Utils.matToBitmap(out, result);
+        origin.release();
+        gray.release();
+        bf.release();
+        out.release();
+        return result;
+    }
+
 
 
     public  static Bitmap getBinaryImage(Bitmap bitmap,int type) throws Exception{
@@ -19,19 +40,11 @@ public class PictureHandle {
           int[] gray = pixels;
 
           switch(type){
-              case FILTER_ONLY:
-                  gray = filter_only(width,height,pixels);
-                  break;
               case FILTER_OSTU:
                   gray = filter_ostu(width,height,pixels);
                   break;
-              case FILTER_ITERATOR:
-                  gray = filter_iterator(width,height,pixels);
+              default:
                   break;
-              case FILTER_MAXTRIX:
-               //   gray = filter_matrix(width,height,pixels);
-                  break;
-
           }
 
           Bitmap newbmp = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
@@ -39,9 +52,6 @@ public class PictureHandle {
 
           return newbmp;
       }
-
-
-
 
 
     private static int[] filter_ostu(int width, int height, int[] inPixels) {
@@ -132,97 +142,5 @@ public class PictureHandle {
         return outPixels;
     }
 
-    private static int[] filter_only(int width, int height, int[] inputs) {
-        int[] newpixel = new int[width*height];
-
-        for(int i = 0; i < height; ++i){
-            for(int j = 0; j < width; ++j){
-                int argb = inputs[width*i+j];
-                int alpha = argb & 0xff000000;
-                int red = (argb >> 16) & 0xff;
-                int green = (argb >> 8) & 0xff;
-                int blue = (argb) & 0xff;
-                int gray = (int) (0.3*red+0.59*green+0.11*blue);
-                if(gray <= 95){
-                    gray = 0;
-                }else{
-                    gray = 255;
-                }
-                newpixel[width*i+j] = gray;
-            }
-        }
-        return newpixel ;
-    }
-
-
-    public static int[] filter_iterator(int width, int height, int[] inputs){
-          int[] grayArr = new int[width*height];
-          int[] newpixel = new int[width*height];
-
-          for(int i = 0; i < height; ++i){
-              for(int j = 0; j < width; ++j){
-                  int argb = inputs[width*i+j];
-                  int red = (argb >> 16) & 0xff;
-                  int green = (argb >> 8) & 0xff;
-                  int blue = (argb) & 0xff;
-                  int gray = (int) (0.3*red+0.59*green+0.11*blue);
-                  grayArr[width*i+j] = gray;
-              }
-          }
-
-          // find the maximal and minimal grayscale value zmax and zmin
-          int Gmax = grayArr[0], Gmin = grayArr[0];
-          for (int index = 0; index < width * height; index++) {
-              if (grayArr[index] > Gmax) {
-                  Gmax = grayArr[index];
-              }
-              if (grayArr[index] < Gmin) {
-                  Gmin = grayArr[index];
-              }
-          }
-
-          //获取灰度直方图
-          int i, j, t, count1 = 0, count2 = 0, sum1 = 0, sum2 = 0;
-          int bp, fp;
-          int[] histogram = new int[256];
-          for (t = Gmin; t <= Gmax; t++) {
-              for (int index = 0; index < width * height; index++) {
-                  if (grayArr[index] == t)
-                      histogram[t]++;
-              }
-          }
-
-          /*
-           * 迭代法求出最佳分割阈值
-           * */
-          int T = 0;
-          int newT = (Gmax + Gmin) / 2;//初始阈值
-          while (T != newT)
-          //求出背景和前景的平均灰度值bp和fp
-          {
-              for (i = 0; i < T; i++) {
-                  count1 += histogram[i];//背景像素点的总个数
-                  sum1 += histogram[i] * i;//背景像素点的灰度总值
-              }
-              bp = (count1 == 0) ? 0 : (sum1 / count1);//背景像素点的平均灰度值
-
-              for (j = i; j < histogram.length; j++) {
-                  count2 += histogram[j];//前景像素点的总个数
-                  sum2 += histogram[j] * j;//前景像素点的灰度总值
-              }
-              fp = (count2 == 0) ? 0 : (sum2 / count2);//前景像素点的平均灰度值
-              T = newT;
-              newT = (bp + fp) / 2;
-          }
-          int finestYzt = newT; //最佳阈值
-
-          //二值化
-          for (int index = 0; index < width * height; index++) {
-              if (grayArr[index] > finestYzt)
-                  newpixel[index] = Color.WHITE;
-              else newpixel[index] = Color.BLACK;
-          }
-          return newpixel;
-      }
 
 }

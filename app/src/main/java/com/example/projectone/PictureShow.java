@@ -18,7 +18,7 @@ import java.io.IOException;
 
 public class PictureShow extends AppCompatActivity {
 
-    private static final String TAG="JARVIS IN PICHANDLE";
+    private static final String TAG="JARVIS IN PICSHOW";
     public static final String EXTRA_PHOTO = "exphoto";
     private static String datapath;
     ImageView imageView;
@@ -44,14 +44,21 @@ public class PictureShow extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        //Opencv
+        try {
+            bitmap = PictureHandle.BinarizationWithDenoising(bitmap,20);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         //Binaryimge
+/*
         try {
             bitmap = PictureHandle.getBinaryImage(bitmap,PictureHandle.FILTER_OSTU);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+*/
         //tess-two check
         datapath = Environment.getExternalStorageDirectory().getPath();
         datapath = datapath + "/ZLYTEST";
