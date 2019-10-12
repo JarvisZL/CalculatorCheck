@@ -71,5 +71,11 @@ public class PictureShow extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG,Log.getStackTraceString(e));
         }
+
+
+        //TensorFlow check
+
+
+
     }
 }
