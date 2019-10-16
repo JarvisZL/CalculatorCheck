@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = new Intent(MainActivity.this,PictureShow.class);
                     //from file to Uri
                     //  intent.putExtra(PictureShow.EXTRA_PHOTO,FileProvider.getUriForFile(MainActivity.this,"com.example.projectone.fileprovider",file));
-                   //from imageview to Uri
+                    //from imageview to Uri
                     Bitmap bitmap = ((BitmapDrawable) image.getDrawable()).getBitmap();
                     Uri uri = Uri.parse(MediaStore.Images.Media.insertImage(getContentResolver(),bitmap,null,null));
                     intent.putExtra(PictureShow.EXTRA_PHOTO,uri);
