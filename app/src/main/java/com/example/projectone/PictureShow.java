@@ -17,6 +17,7 @@ import java.io.IOException;
 
 public class PictureShow extends AppCompatActivity {
 
+
     private static final String TAG="JARVIS IN PICSHOW";
     public static final String EXTRA_PHOTO = "exphoto";
     private static String datapath;
@@ -38,9 +39,8 @@ public class PictureShow extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_picture_show);
 
-
-        imageView1 = findViewById(R.id.afterclip);
-        imageView2 = findViewById(R.id.afterbinary);
+        imageView1 = findViewById(R.id.afterbinary);
+        imageView2 = findViewById(R.id.afterclip);
         imageView3 = findViewById(R.id.afterresize);
         textView = findViewById(R.id.result);
         imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
@@ -53,6 +53,34 @@ public class PictureShow extends AppCompatActivity {
             Log.i(TAG,"from uri to bitmap failed");
         }
 
+        //binary
+        try {
+            bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,10);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG,"opencv handle binarization failed");
+        }
+
+        //erode and bilate
+        try {
+            bitmap = PictureHandle.erodeAnddialte_Opencv(bitmap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG,"opencv handle erode and dilate failed");
+        }
+        imageView1.setImageBitmap(bitmap);
+
+
+        //Segment
+
+        try {
+            PictureHandle.cutImg(bitmap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG,"Cut failed");
+        }
+
+
         //clip
         Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
         try {
@@ -61,18 +89,8 @@ public class PictureShow extends AppCompatActivity {
             e.printStackTrace();
             Log.i(TAG,"opencv handle clip failed");
         }
-        imageView1.setImageBitmap(bitmap);
-        Log.i(TAG,"after clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
-
-
-        //binary
-        try {
-            bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,10);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i(TAG,"opencv handle binarization failed");
-        }
         imageView2.setImageBitmap(bitmap);
+        Log.i(TAG,"after clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
 
         //resize
         try {
