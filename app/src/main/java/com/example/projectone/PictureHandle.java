@@ -117,18 +117,22 @@ public class PictureHandle {
             Imgcodecs.imwrite(path,img);
         } catch (Exception e) {
             e.printStackTrace();
+            Log.i(TAG,"save failed.");
         }
 
     }
 
-    public static void cutImg(Bitmap bitmap){
+    public static Bitmap cutImg(Bitmap bitmap){
        Mat origin = new Mat();
        Utils.bitmapToMat(bitmap,origin);
        List<Mat> ycutpoint = cutImgX(origin);//得到了每一行图片的矩阵。
        for(int i = 0; i < ycutpoint.size(); ++i){
            Mat temp = ycutpoint.get(i);
-           saveImg(filepath+"line"+i,temp);
+           saveImg(filepath+"line"+i+".png",temp);
        }
+       Bitmap res = Bitmap.createBitmap(ycutpoint.get(0).cols(),ycutpoint.get(0).rows(),Bitmap.Config.ARGB_8888);
+       Utils.matToBitmap(ycutpoint.get(0),res);
+       return res;
     }
 
 

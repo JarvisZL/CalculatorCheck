@@ -72,13 +72,14 @@ public class PictureShow extends AppCompatActivity {
 
 
         //Segment
-
+        /*
         try {
-            PictureHandle.cutImg(bitmap);
+           Bitmap temp = PictureHandle.cutImg(bitmap);
+           imageView1.setImageBitmap(temp);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"Cut failed");
-        }
+        }*/
 
 
         //clip
