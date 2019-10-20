@@ -6,4 +6,7 @@
     <string name="Text">Character Recognition</string>
     <string name="choose_from_album">Choose from Album</string>
     <string name="failed_to_create_classifier">classfier create failed</string>
+    <string name="afterclip">AfterClip</string>
+    <string name="afterbinary">AfterBinarization</string>
+    <string name="afterresize">AfterResize</string>
 </resources>

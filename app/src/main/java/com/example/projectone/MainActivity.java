@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView image;
     File file;
 
+
     private static String filepath;
     private static final int TAKE_PHOTO = 200;
     private static final int CHOOSE_PHOTO = 100;
@@ -137,8 +138,8 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         fileInputStream = new FileInputStream(filepath);
                         Bitmap bitmap = BitmapFactory.decodeStream(fileInputStream);
-                        int degree = PictureRotate.getBitmapdgree(filepath);
-                        bitmap = PictureRotate.rotateBitmap(bitmap,degree);
+                        int degree = PictureHandle.getBitmapdgree(filepath);
+                        bitmap = PictureHandle.rotateBitmap(bitmap,degree);
                         image.setImageBitmap(bitmap);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();

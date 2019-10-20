@@ -1,6 +1,5 @@
 package com.example.projectone;
 
-import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,6 +11,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.opencv.android.OpenCVLoader;
+
 import java.io.IOException;
 
 public class PictureShow extends AppCompatActivity {
@@ -19,22 +20,29 @@ public class PictureShow extends AppCompatActivity {
     private static final String TAG="JARVIS IN PICSHOW";
     public static final String EXTRA_PHOTO = "exphoto";
     private static String datapath;
-    ImageView imageView;
+    ImageView imageView1,imageView2,imageView3;
     TextView textView;
     Bitmap bitmap;
     private Uri imguri;
 
     private Classifier mclassifier;
 
-    @SuppressLint("WrongThread")
+    static {
+        if(!OpenCVLoader.initDebug()){
+            Log.i(TAG,"Opencv faied");
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_picture_show);
 
-        imageView = findViewById(R.id.photo);
-        textView = findViewById(R.id.result);
 
+        imageView1 = findViewById(R.id.afterclip);
+        imageView2 = findViewById(R.id.afterbinary);
+        imageView3 = findViewById(R.id.afterresize);
+        textView = findViewById(R.id.result);
         imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
 
         //from Uri to Bitmap
@@ -45,18 +53,44 @@ public class PictureShow extends AppCompatActivity {
             Log.i(TAG,"from uri to bitmap failed");
         }
 
-        bitmap = PictureHandle.resize_28_Opencv(bitmap);
-
-        //Opencv
+        //clip
+        Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
         try {
-            bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,20);
+            bitmap = PictureHandle.imgClip_Opencv(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
-            Log.i(TAG,"opencv handle failed");
+            Log.i(TAG,"opencv handle clip failed");
         }
+        imageView1.setImageBitmap(bitmap);
+        Log.i(TAG,"after clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
 
-        //tess-two check
-        /*
+
+        //binary
+        try {
+            bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,10);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG,"opencv handle binarization failed");
+        }
+        imageView2.setImageBitmap(bitmap);
+
+        //resize
+        try {
+            bitmap = PictureHandle.resize_28_Opencv(bitmap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG,"opencv handle  resize failed");
+        }
+        imageView3.setImageBitmap(bitmap);
+
+        //TensorFlow check
+        tensorflowinit();
+        // Log.i(TAG,"initsuccess");
+        tensorflowrun(bitmap);
+        // Log.i(TAG,"runsuccess");
+
+
+        /*tess-two check
         datapath = Environment.getExternalStorageDirectory().getPath();
         datapath = datapath + "/ZLYTEST";
         imageView.setImageBitmap(bitmap);
@@ -68,17 +102,7 @@ public class PictureShow extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG,Log.getStackTraceString(e));
         }*/
-
-
-        //TensorFlow check
-        tensorflowinit();
-       // Log.i(TAG,"initsuccess");
-        imageView.setImageBitmap(bitmap);
-       // Log.i(TAG,"getbitmap");
-        tensorflowrun(bitmap);
-       // Log.i(TAG,"runsuccess");
     }
-
 
     private void tensorflowinit(){
         try{
