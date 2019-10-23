@@ -14,11 +14,13 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
 
 import java.io.IOException;
+import java.util.List;
 
 public class PictureShow extends AppCompatActivity {
-
 
     private static final String TAG="JARVIS IN PICSHOW";
     public static final String EXTRA_PHOTO = "exphoto";
@@ -26,7 +28,8 @@ public class PictureShow extends AppCompatActivity {
     ImageView imageView1,imageView2,imageView3;
     TextView textView;
     Bitmap bitmap;
-    private Uri imguri;
+    private List<Mat> imgs;
+    private String ans;
 
     private Classifier mclassifier;
 
@@ -43,14 +46,14 @@ public class PictureShow extends AppCompatActivity {
         setContentView(R.layout.activity_picture_show);
 
         imageView1 = findViewById(R.id.afterbinary);
-        imageView2 = findViewById(R.id.afterclip);
-        imageView3 = findViewById(R.id.afterresize);
+   //     imageView2 = findViewById(R.id.afterclip);
+    //    imageView3 = findViewById(R.id.afterresize);
         textView = findViewById(R.id.result);
-        imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
+        Uri imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
 
         //from Uri to Bitmap
         try {
-            bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(),imguri);
+            bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imguri);
         } catch (IOException e) {
             e.printStackTrace();
             Log.i(TAG,"from uri to bitmap failed");
@@ -74,17 +77,20 @@ public class PictureShow extends AppCompatActivity {
         imageView1.setImageBitmap(bitmap);
 
 
-        //Segment
+        //Cutimg
         try {
-           Bitmap temp = PictureHandle.cutImg(bitmap);
+           imgs = PictureHandle.cutImg(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"Cut failed");
         }
 
+        for(int i = 0 ; i< imgs.size();++i){
+            System.out.println(imgs.get(i));
+        }
 
         //clip
-        Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
+    /*  Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
         try {
             bitmap = PictureHandle.imgClip_Opencv(bitmap);
         } catch (Exception e) {
@@ -93,22 +99,38 @@ public class PictureShow extends AppCompatActivity {
         }
         imageView2.setImageBitmap(bitmap);
         Log.i(TAG,"after clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
+    */
 
-        //resize
-        try {
-            bitmap = PictureHandle.resize_28_Opencv(bitmap);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i(TAG,"opencv handle  resize failed");
-        }
-        imageView3.setImageBitmap(bitmap);
-
-        //TensorFlow check
         tensorflowinit();
-        // Log.i(TAG,"initsuccess");
-        tensorflowrun(bitmap);
-        // Log.i(TAG,"runsuccess");
 
+        for(int i = 0 ; i< imgs.size(); ++i){
+            Mat mat = imgs.get(i);
+            if(mat.cols() < 50 && mat.rows() < 50) continue;;
+            Bitmap bitmap1 = Bitmap.createBitmap(mat.cols(),mat.rows(),Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(mat,bitmap1);
+            //resize
+            try {
+                bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
+                if(i == 1) imageView1.setImageBitmap(bitmap1);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.i(TAG,"opencv handle  resize failed");
+            }
+
+            String res = tensorflowrun(bitmap1);
+            if(res != null){
+                if(ans == null){
+                    ans = res;
+                    ans += " ";
+                }
+                else{
+                    ans += res;
+                    ans += " ";
+                }
+            }
+        }
+
+        textView.setText("The digits are "+ans);
 
         /*tess-two check
         datapath = Environment.getExternalStorageDirectory().getPath();
@@ -133,11 +155,20 @@ public class PictureShow extends AppCompatActivity {
         }
     }
 
-    private void tensorflowrun(Bitmap bitmap){
+    private String  tensorflowrun(Bitmap bitmap){
         if(mclassifier == null){
             Log.i(TAG,"classifier is null");
         }
         Result result = mclassifier.classify(bitmap);
-        textView.setText(String.valueOf(result.getNumber()));
+        float prob = result.getProbability();
+        Log.i(TAG,"prob : "+prob);
+        if(prob < 0.1){
+            return null;
+        }
+        else{
+            String ret = String.valueOf(result.getNumber());
+            return ret;
+        }
+
     }
 }

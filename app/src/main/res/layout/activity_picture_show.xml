@@ -11,6 +11,7 @@
         android:layout_width="200dp"
         android:layout_height="200dp"
         android:layout_gravity="center_horizontal"
+        android:layout_margin="20dp"
         android:id="@+id/afterbinary"/>
     <TextView
         android:layout_width="wrap_content"
@@ -20,41 +21,15 @@
         android:text="@string/afterbinary"
         android:textSize="20sp" />
 
-    <ImageView
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_gravity="center_horizontal"
-        android:id="@+id/afterclip"/>
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:gravity="center"
-        android:text="@string/afterclip"
-        android:textSize="20sp" />
-
-    <ImageView
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_gravity="center_horizontal"
-        android:id="@+id/afterresize"/>
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:gravity="center"
-        android:text="@string/afterresize"
-        android:textSize="20sp" />
-
-
-    <TextView
+        android:id="@+id/result"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="24sp"
-        android:layout_marginTop="10dp"
         android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
         android:gravity="center_horizontal"
-        android:id="@+id/result"/>
+        android:textColor="@color/colorAccent"
+        android:textSize="30sp" />
 
 
 </LinearLayout>

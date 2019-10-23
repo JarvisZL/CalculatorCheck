@@ -14,6 +14,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -26,8 +27,8 @@ import java.util.List;
 import static java.lang.Math.min;
 
 public class PictureHandle {
-    private static final int min_tresh = 5;//波峰最小幅度
-    private static final int min_range = 5;//波峰最小间隔
+    private static final int min_tresh = 3;//波峰最小幅度
+    private static final int min_range = 10;//波峰最小间隔
 
     private static final int VPRO = 0;//segmode
     private static final int HPRO = 1;
@@ -35,7 +36,7 @@ public class PictureHandle {
     private static final int BLACK = 0;//color
     private static final int WITHE = 255;
 
-    private static final int CWidth = 300;//clipsize
+    private static final int CWidth = 300;//customsize
     private static final int CHeight = 300;
 
     private static final int SWidth = 28;//standard
@@ -43,6 +44,7 @@ public class PictureHandle {
 
     private static final String TAG = "JARVIS in handle";
     private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
+    private static int  cnt = 0;
 
     public static Bitmap BinarizationWithDenoising_Opencv(Bitmap bitmap,int d){
         Log.i(TAG,"begin to binarizaiton");
@@ -59,12 +61,7 @@ public class PictureHandle {
         Log.i(TAG,"After denoising");
         Imgproc.adaptiveThreshold(bf, out, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 4.5D);
         Log.i(TAG,"After adaptiveThreshold");
-        /*
-        Imgproc.adaptiveThreshold(gray, bf, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 4.5D);
-        Log.i(TAG,"After adaptiveThreshold");
-        Imgproc.bilateralFilter(bf, out, d, (double) (d * 2), (double) (d / 2));
-        Log.i(TAG,"After denoising");
-        */
+
         Utils.matToBitmap(out, result);
         origin.release();
         gray.release();
@@ -80,7 +77,23 @@ public class PictureHandle {
         Mat out  = new Mat();
         Size size = new Size(SWidth,SHeight);
         Utils.bitmapToMat(bitmap,origin);
-        Imgproc.resize(origin,out,size,0,0,Imgproc.INTER_AREA);
+        //先扩充成正方形
+        Mat smat = new Mat();
+        int width = origin.cols(),height = origin.rows();
+        Scalar value = new Scalar(WITHE,WITHE,WITHE);
+       /*
+        if(width > height){
+             Core.copyMakeBorder(origin,smat,(width-height)/2,(width-height)/2,0,0,Core.BORDER_CONSTANT,value);
+        }else if(width < height){
+             Core.copyMakeBorder(origin,smat,0,0,(height-width)/2,(height-width)/2,Core.BORDER_CONSTANT,value);
+        }else {
+             origin.copyTo(smat);
+        }*/
+     //   Core.copyMakeBorder(origin,smat,(CHeight-height)/2,(CHeight-height)/2,(CWidth-width)/2,(CWidth-width)/2, Core.BORDER_CONSTANT,value);
+       // saveImg(filepath+"expand"+(cnt++)+".png",smat);
+        origin.copyTo(smat);
+        //缩放
+        Imgproc.resize(smat,out,size,0,0,Imgproc.INTER_AREA);
         Utils.matToBitmap(out,res);
         origin.release();
         out.release();
@@ -155,22 +168,20 @@ public class PictureHandle {
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public static Bitmap cutImg(Bitmap bitmap){
+    public static List<Mat> cutImg(Bitmap bitmap){
        Mat origin = new Mat();
        Utils.bitmapToMat(bitmap,origin);
+       List<Mat> ret = new ArrayList<>();
        List<Mat> ycutpoint = cutImginmode(origin,HPRO);//得到了每一行图片的矩阵。
        for(int i = 0; i < ycutpoint.size(); ++i){
           // saveImg(filepath+"line"+i+".png",ycutpoint.get(i));
            List<Mat> xcutpoint = cutImginmode(ycutpoint.get(i), VPRO);
           for(int j = 0; j < xcutpoint.size(); ++j){
-               saveImg(filepath+"img("+i+j+").png",xcutpoint.get(j));
-           }
-
+               saveImg(filepath+"img("+i+","+j+").png",xcutpoint.get(j));
+               ret.add(xcutpoint.get(j));
+          }
        }
-
-       Bitmap res = Bitmap.createBitmap(ycutpoint.get(0).cols(),ycutpoint.get(0).rows(),Bitmap.Config.ARGB_8888);
-       Utils.matToBitmap(ycutpoint.get(0),res);
-       return res;
+       return ret;
     }
 
 
@@ -209,8 +220,9 @@ public class PictureHandle {
                          Mat t = new Mat();
                          temp.copyTo(t);
                          YMat.add(t);
+                         begin = end = 0;
                     }
-                    begin = end = 0;
+
                 }
                 else if(xNum[i] < min_tresh || begin == 0) {
                     continue;
@@ -221,7 +233,6 @@ public class PictureHandle {
         else if(mode == VPRO){
             int nWidth = origin.cols(), nHeight = origin.rows();
             int[] yNum = new int[nWidth];
-
             // 统计出每列黑色像素点的个数
             for (int i = 0; i < nWidth; i++) {
                 for (int j = 0; j < nHeight; j++) {
@@ -230,10 +241,8 @@ public class PictureHandle {
                     }
                 }
             }
-
             //画图
             // Drawprojection(yNum,mode);
-
             //分割
             List<Mat> XMat = new ArrayList<>();
             int begin =0,end = 0;
@@ -253,14 +262,14 @@ public class PictureHandle {
                         Mat t = new Mat();
                         temp.copyTo(t);
                         XMat.add(t);
+                        begin = end = 0;
                     }
-                    begin = end = 0;
+
                 }
                 else if(yNum[i] < min_tresh || begin == 0) {
                     continue;
                 }
             }
-
             return XMat;
         }
         else
