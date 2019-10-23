@@ -2,6 +2,7 @@ package com.example.projectone;
 
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -9,6 +10,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.opencv.android.OpenCVLoader;
@@ -34,6 +36,7 @@ public class PictureShow extends AppCompatActivity {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,14 +75,12 @@ public class PictureShow extends AppCompatActivity {
 
 
         //Segment
-        /*
         try {
            Bitmap temp = PictureHandle.cutImg(bitmap);
-           imageView1.setImageBitmap(temp);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"Cut failed");
-        }*/
+        }
 
 
         //clip

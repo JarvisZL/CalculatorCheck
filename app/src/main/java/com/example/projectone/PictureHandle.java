@@ -3,10 +3,14 @@ package com.example.projectone;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 
+import androidx.annotation.RequiresApi;
+
 import org.opencv.android.Utils;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -22,13 +26,21 @@ import java.util.List;
 import static java.lang.Math.min;
 
 public class PictureHandle {
+    private static final int min_tresh = 5;//波峰最小幅度
+    private static final int min_range = 5;//波峰最小间隔
 
-    private static final int BLACK = 0;
+    private static final int VPRO = 0;//segmode
+    private static final int HPRO = 1;
+
+    private static final int BLACK = 0;//color
     private static final int WITHE = 255;
-    private static final int CWidth = 300;
+
+    private static final int CWidth = 300;//clipsize
     private static final int CHeight = 300;
-    private static final int SWidth = 28;
+
+    private static final int SWidth = 28;//standard
     private static final int SHeight = 28;
+
     private static final String TAG = "JARVIS in handle";
     private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
 
@@ -122,132 +134,147 @@ public class PictureHandle {
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)//android 7
+    public static void Drawprojection(int[] pos, int mode){
+        if(mode == HPRO){
+            int width = Arrays.stream(pos).max().getAsInt();
+            int height = pos.length;
+            Mat project = Mat.zeros(height,width, CvType.CV_8SC1);//黑底图
+            for(int i = 0; i < project.rows(); ++i){
+                for(int j = 0; j < pos[i]; ++j){
+                    project.put(i,j,WITHE);
+                }
+            }
+            saveImg(filepath+"line.png",project);
+        }
+        else if(mode == VPRO){
+
+        }
+
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public static Bitmap cutImg(Bitmap bitmap){
        Mat origin = new Mat();
        Utils.bitmapToMat(bitmap,origin);
-       List<Mat> ycutpoint = cutImgX(origin);//得到了每一行图片的矩阵。
+       List<Mat> ycutpoint = cutImginmode(origin,HPRO);//得到了每一行图片的矩阵。
        for(int i = 0; i < ycutpoint.size(); ++i){
-           Mat temp = ycutpoint.get(i);
-           saveImg(filepath+"line"+i+".png",temp);
+          // saveImg(filepath+"line"+i+".png",ycutpoint.get(i));
+           List<Mat> xcutpoint = cutImginmode(ycutpoint.get(i), VPRO);
+          for(int j = 0; j < xcutpoint.size(); ++j){
+               saveImg(filepath+"img("+i+j+").png",xcutpoint.get(j));
+           }
+
        }
+
        Bitmap res = Bitmap.createBitmap(ycutpoint.get(0).cols(),ycutpoint.get(0).rows(),Bitmap.Config.ARGB_8888);
        Utils.matToBitmap(ycutpoint.get(0),res);
        return res;
     }
 
 
-    public static List<Mat> cutImgX(Mat origin){//分割成一行行
-        int i, j;
-        int nWidth = origin.cols(), nHeight = origin.rows();
-        int[] xNum = new int[nHeight], cNum;
-        int average = 0;// 记录像素的平均值
 
-        // 统计出每行黑色像素点的个数
-        for (i = 0; i < nHeight; i++) {
-            for (j = 0; j < nWidth; j++) {
-                if (((int)origin.get(i,j)[0]) == BLACK) {
-                    xNum[i]++;
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static List<Mat> cutImginmode(Mat origin,int mode){
+        if(mode == HPRO){
+            int nWidth = origin.cols(), nHeight = origin.rows();
+            int[] xNum = new int[nHeight];
+            // 统计出每行黑色像素点的个数
+            for (int i = 0; i < nHeight; i++) {
+                for (int j = 0; j < nWidth; j++) {
+                    if (((int)origin.get(i,j)[0]) == BLACK) {
+                        xNum[i]++;
+                    }
                 }
             }
-        }
-
-        // 经过测试这样得到的平均值最优
-        cNum = Arrays.copyOf(xNum, xNum.length);
-        Arrays.sort(cNum);
-        for (i = 31 * nHeight / 32; i < nHeight; i++) {
-            average += cNum[i];
-        }
-        average /= (nHeight / 32);
-
-        // 把需要切割的y点都存到cutY中
-        List<Integer> cutY = new ArrayList<Integer>();
-        for (i = 0; i < nHeight; i++) {
-            if (xNum[i] > average) {
-                cutY.add(i);
-            }
-        }
-
-        // 优化cutY
-        if (cutY.size() != 0) {
-            int temp = cutY.get(cutY.size() - 1);
-            // 因为线条有粗细,优化cutY
-            for (i = cutY.size() - 2; i >= 0; i--) {
-                int k = temp - cutY.get(i);
-                if (k <= 8) {
-                    cutY.remove(i);
-                } else {
-                    temp = cutY.get(i);
+            //画图
+           // Drawprojection(xNum,mode);
+            //分割
+            List<Mat> YMat = new ArrayList<>();
+            int begin =0,end = 0;
+            for(int i = 0; i < xNum.length; ++i){
+                if(xNum[i] > min_tresh && begin == 0){
+                    begin = i;
+                }
+                else if(xNum[i] > min_tresh && begin != 0){
+                    continue;
+                }
+                else if(xNum[i] < min_tresh && begin != 0){
+                    end = i;
+                    if(end - begin >= min_range){//find a row
+                         int height = end - begin;
+                         System.out.println("height:" + height);
+                         Mat temp = new Mat(origin,new Rect(0,begin,nWidth,height));
+                         Mat t = new Mat();
+                         temp.copyTo(t);
+                         YMat.add(t);
+                    }
+                    begin = end = 0;
+                }
+                else if(xNum[i] < min_tresh || begin == 0) {
+                    continue;
                 }
             }
+            return YMat;
         }
-        // 把切割的图片都保存到YMat中
-        List<Mat> YMat = new ArrayList<Mat>();
-        for (i = 1; i < cutY.size(); i++) {
-            // 设置感兴趣的区域
-            int startY = cutY.get(i - 1);
-            int height = cutY.get(i) - startY;
-            Mat temp = new Mat(origin, new Rect(0, startY, nWidth, height));
-            Mat t = new Mat();
-            temp.copyTo(t);
-            YMat.add(t);
+        else if(mode == VPRO){
+            int nWidth = origin.cols(), nHeight = origin.rows();
+            int[] yNum = new int[nWidth];
+
+            // 统计出每列黑色像素点的个数
+            for (int i = 0; i < nWidth; i++) {
+                for (int j = 0; j < nHeight; j++) {
+                    if (((int)origin.get(j,i)[0]) == BLACK) {
+                        yNum[i]++;
+                    }
+                }
+            }
+
+            //画图
+            // Drawprojection(yNum,mode);
+
+            //分割
+            List<Mat> XMat = new ArrayList<>();
+            int begin =0,end = 0;
+            for(int i = 0; i < yNum.length; ++i){
+                if(yNum[i] > min_tresh && begin == 0){
+                    begin = i;
+                }
+                else if(yNum[i] > min_tresh && begin != 0){
+                    continue;
+                }
+                else if(yNum[i] < min_tresh && begin != 0){
+                    end = i;
+                    if(end - begin >= min_range){//find a column
+                        int width = end - begin;
+                        System.out.println("width:" + width);
+                        Mat temp = new Mat(origin,new Rect(begin,0,width,nHeight));
+                        Mat t = new Mat();
+                        temp.copyTo(t);
+                        XMat.add(t);
+                    }
+                    begin = end = 0;
+                }
+                else if(yNum[i] < min_tresh || begin == 0) {
+                    continue;
+                }
+            }
+
+            return XMat;
         }
-        return YMat;
+        else
+            return null;
     }
 
-    public static List<Mat> cutImgY(Mat origin){
-        int i, j;
-        int nWidth = origin.cols(), nHeight = origin.rows();
-        int[] xNum = new int[nWidth], cNum;
-        int average = 0;// 记录像素的平均值
 
-        // 统计出每列黑色像素点的个数
-        for (i = 0; i < nWidth; i++) {
-            for (j = 0; j < nHeight; j++) {
-                if (((int)origin.get(i,j)[0]) == BLACK) {
-                    xNum[i]++;
-                }
-            }
-        }
-        // 经过测试这样得到的平均值最优 , 平均值的选取很重要
-        cNum = Arrays.copyOf(xNum, xNum.length);
-        Arrays.sort(cNum);
-        for (i = 31 * nWidth / 32; i < nWidth; i++) {
-            average += cNum[i];
-        }
-        average /= (nWidth / 28);
 
-        // 把需要切割的x点都存到cutX中,
-        List<Integer> cutX = new ArrayList<Integer>();
-        for (i = 0; i < nWidth; i += 2) {
-            if (xNum[i] >= average) {
-                cutX.add(i);
-            }
-        }
-        if (cutX.size() != 0) {
-            int temp = cutX.get(cutX.size() - 1);
-            // 因为线条有粗细,优化cutX
-            for (i = cutX.size() - 2; i >= 0; i--) {
-                int k = temp - cutX.get(i);
-                if (k <= 10) {
-                    cutX.remove(i);
-                } else {
-                    temp = cutX.get(i);
-                }
-            }
-        }
-        // 把切割的图片都保存到XMat中
-        List<Mat> XMat = new ArrayList<Mat>();
-        for (i = 1; i < cutX.size(); i++) {
-            // 设置感兴趣的区域
-            int startX = cutX.get(i - 1);
-            int width = cutX.get(i) - startX;
-            Mat temp = new Mat(origin, new Rect(startX, 0, width, nHeight));
-            Mat t = new Mat();
-            temp.copyTo(t);
-            XMat.add(t);
-        }
-        return XMat;
-    }
+
+
+
+
+
+
 
 
 

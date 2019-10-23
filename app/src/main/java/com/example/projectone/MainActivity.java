@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)//android4.3
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,8 +85,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 Uri imguri;
-                //Android version
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){//android 7
                     imguri = FileProvider.getUriForFile(MainActivity.this,"com.example.projectone.fileprovider",file);
                 }
                 else{
