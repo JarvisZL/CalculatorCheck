@@ -10,6 +10,7 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -36,15 +37,14 @@ public class PictureHandle {
     private static final int BLACK = 0;//color
     private static final int WITHE = 255;
 
-    private static final int CWidth = 300;//customsize
-    private static final int CHeight = 300;
+    private static final int CWidth = 400;//customsize
+    private static final int CHeight = 400 ;
 
     private static final int SWidth = 28;//standard
     private static final int SHeight = 28;
 
     private static final String TAG = "JARVIS in handle";
     private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
-    private static int  cnt = 0;
 
     public static Bitmap BinarizationWithDenoising_Opencv(Bitmap bitmap,int d){
         Log.i(TAG,"begin to binarizaiton");
@@ -81,17 +81,8 @@ public class PictureHandle {
         Mat smat = new Mat();
         int width = origin.cols(),height = origin.rows();
         Scalar value = new Scalar(WITHE,WITHE,WITHE);
-       /*
-        if(width > height){
-             Core.copyMakeBorder(origin,smat,(width-height)/2,(width-height)/2,0,0,Core.BORDER_CONSTANT,value);
-        }else if(width < height){
-             Core.copyMakeBorder(origin,smat,0,0,(height-width)/2,(height-width)/2,Core.BORDER_CONSTANT,value);
-        }else {
-             origin.copyTo(smat);
-        }*/
-     //   Core.copyMakeBorder(origin,smat,(CHeight-height)/2,(CHeight-height)/2,(CWidth-width)/2,(CWidth-width)/2, Core.BORDER_CONSTANT,value);
-       // saveImg(filepath+"expand"+(cnt++)+".png",smat);
-        origin.copyTo(smat);
+
+        Core.copyMakeBorder(origin,smat,(CHeight-height)/2,(CHeight-height)/2,(CWidth-width)/2,(CWidth-width)/2, Core.BORDER_CONSTANT,value);
         //缩放
         Imgproc.resize(smat,out,size,0,0,Imgproc.INTER_AREA);
         Utils.matToBitmap(out,res);
@@ -100,6 +91,32 @@ public class PictureHandle {
         return res;
     }
 
+    public static void fillandsave(List<Mat> matList){
+        for(int i = 0; i < matList.size(); ++i){
+            int width = matList.get(i).cols(),height = matList.get(i).rows();
+            if(width < 50 && height < 50) continue;
+            System.out.println("fillandsave: "+i);
+            Mat smat = new Mat();
+            Scalar value = new Scalar(WITHE,WITHE,WITHE);
+            Core.copyMakeBorder(matList.get(i),smat,(CHeight-height)/2,(CHeight-height)/2,(CWidth-width)/2,(CWidth-width)/2, Core.BORDER_CONSTANT,value);
+            saveImg(filepath+"expand"+i+".jpg",smat);
+            smat.release();
+        }
+    }
+
+    public static Bitmap resize_28_Opencv_withoutfill(Bitmap bitmap) {
+        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.ARGB_8888);
+        Mat origin = new Mat();
+        Mat out  = new Mat();
+        Size size = new Size(SWidth,SHeight);
+        Utils.bitmapToMat(bitmap,origin);
+        //缩放
+        Imgproc.resize(origin,out,size,0,0,Imgproc.INTER_AREA);
+        Utils.matToBitmap(out,res);
+        origin.release();
+        out.release();
+        return res;
+    }
 
     public static Bitmap imgClip_Opencv(Bitmap bitmap){
         if(bitmap.getHeight() <= CHeight && bitmap.getWidth() <= CWidth){
@@ -177,10 +194,14 @@ public class PictureHandle {
           // saveImg(filepath+"line"+i+".png",ycutpoint.get(i));
            List<Mat> xcutpoint = cutImginmode(ycutpoint.get(i), VPRO);
           for(int j = 0; j < xcutpoint.size(); ++j){
-               saveImg(filepath+"img("+i+","+j+").png",xcutpoint.get(j));
-               ret.add(xcutpoint.get(j));
+               List<Mat> finalcutpoint = cutImginmode(xcutpoint.get(j),HPRO);
+               for(int k = 0; k < finalcutpoint.size(); ++k){//always only once
+                   saveImg(filepath+"img("+i+","+j+").jpg",finalcutpoint.get(k));
+                   ret.add(finalcutpoint.get(k));
+               }
           }
        }
+       origin.release();
        return ret;
     }
 
@@ -203,31 +224,33 @@ public class PictureHandle {
            // Drawprojection(xNum,mode);
             //分割
             List<Mat> YMat = new ArrayList<>();
-            int begin =0,end = 0;
+            int begin =-1,end = 0;
             for(int i = 0; i < xNum.length; ++i){
-                if(xNum[i] > min_tresh && begin == 0){
+                if(xNum[i] > min_tresh && begin == -1){
                     begin = i;
                 }
-                else if(xNum[i] > min_tresh && begin != 0){
-                    continue;
-                }
-                else if(xNum[i] < min_tresh && begin != 0){
+                else if((xNum[i] < min_tresh && begin != -1)||(i == xNum.length-1 && begin != -1 && end == 0)){
                     end = i;
                     if(end - begin >= min_range){//find a row
                          int height = end - begin;
-                         System.out.println("height:" + height);
+                         System.out.println("begin:"+begin+" end:"+end);
                          Mat temp = new Mat(origin,new Rect(0,begin,nWidth,height));
                          Mat t = new Mat();
                          temp.copyTo(t);
                          YMat.add(t);
-                         begin = end = 0;
                     }
+                    begin =-1;
+                    end = 0;
 
                 }
-                else if(xNum[i] < min_tresh || begin == 0) {
+                else if(xNum[i] > min_tresh && begin !=-1){
+                    continue;
+                }
+                else if(xNum[i] < min_tresh || begin == -1) {
                     continue;
                 }
             }
+          //  System.out.println("fbegin: "+begin+" fend: "+end);
             return YMat;
         }
         else if(mode == VPRO){
@@ -245,28 +268,28 @@ public class PictureHandle {
             // Drawprojection(yNum,mode);
             //分割
             List<Mat> XMat = new ArrayList<>();
-            int begin =0,end = 0;
+            int begin =-1,end = 0;
             for(int i = 0; i < yNum.length; ++i){
-                if(yNum[i] > min_tresh && begin == 0){
+                if(yNum[i] > min_tresh && begin == -1){
                     begin = i;
                 }
-                else if(yNum[i] > min_tresh && begin != 0){
-                    continue;
-                }
-                else if(yNum[i] < min_tresh && begin != 0){
+                else if((yNum[i] < min_tresh && begin != -1)||(i == yNum.length-1 && begin != -1 && end == 0)){
                     end = i;
                     if(end - begin >= min_range){//find a column
                         int width = end - begin;
-                        System.out.println("width:" + width);
+                        System.out.println("begin:"+begin+" end:"+end);
                         Mat temp = new Mat(origin,new Rect(begin,0,width,nHeight));
                         Mat t = new Mat();
                         temp.copyTo(t);
                         XMat.add(t);
-                        begin = end = 0;
                     }
-
+                    begin=-1;
+                    end = 0;
                 }
-                else if(yNum[i] < min_tresh || begin == 0) {
+                else if(yNum[i] > min_tresh && begin != -1){
+                    continue;
+                }
+                else if(yNum[i] < min_tresh || begin == -1) {
                     continue;
                 }
             }
@@ -275,18 +298,6 @@ public class PictureHandle {
         else
             return null;
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

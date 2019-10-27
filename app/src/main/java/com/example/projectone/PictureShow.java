@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.ImageView;
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,6 +34,7 @@ public class PictureShow extends AppCompatActivity {
     private String ans;
 
     private Classifier mclassifier;
+    private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
 
     static {
         if(!OpenCVLoader.initDebug()){
@@ -85,12 +88,37 @@ public class PictureShow extends AppCompatActivity {
             Log.i(TAG,"Cut failed");
         }
 
-        for(int i = 0 ; i< imgs.size();++i){
-            System.out.println(imgs.get(i));
-        }
+        //testing
+/*
+        Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(1).cols(),imgs.get(1).rows(),Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(imgs.get(1),bitmap1);
+        bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
+        Mat mat1 = new Mat();
+        Utils.bitmapToMat(bitmap1,mat1);
 
+        System.out.println("----------------------------------------------");
+
+        Mat mat2 = Imgcodecs.imread(filepath+"expand0.jpg");
+        Bitmap bitmap2 = Bitmap.createBitmap(mat2.cols(),mat2.rows(),Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(mat2,bitmap2);
+        bitmap2 = PictureHandle.resize_28_Opencv_simple(bitmap2);
+        Utils.bitmapToMat(bitmap2,mat2);
+
+        tensorflowinit();
+
+        ans = tensorflowrun(bitmap1);
+        ans += " ";
+        ans += tensorflowrun(bitmap2);
+
+
+        System.out.println("----------------------------------------------");
+        System.out.println(mat1.dump());
+        System.out.println("----------------------------------------------");
+        System.out.println(mat2.dump());
+
+*/
         //clip
-    /*  Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
+        /*Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
         try {
             bitmap = PictureHandle.imgClip_Opencv(bitmap);
         } catch (Exception e) {
@@ -99,51 +127,41 @@ public class PictureShow extends AppCompatActivity {
         }
         imageView2.setImageBitmap(bitmap);
         Log.i(TAG,"after clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
-    */
+        */
+
 
         tensorflowinit();
 
-        for(int i = 0 ; i< imgs.size(); ++i){
-            Mat mat = imgs.get(i);
-            if(mat.cols() < 50 && mat.rows() < 50) continue;;
+        //fill and save
+        try{
+            PictureHandle.fillandsave(imgs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG,"opencv handle fillandsave failed.");
+        }
+
+        //get and resize
+        for(int i = 0 ; i<imgs.size(); ++i){
+            if(imgs.get(i).rows() < 50 && imgs.get(i).cols() < 50) continue;
+            Mat mat = Imgcodecs.imread(filepath+"expand"+i+".jpg");
             Bitmap bitmap1 = Bitmap.createBitmap(mat.cols(),mat.rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(mat,bitmap1);
-            //resize
-            try {
-                bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
-                if(i == 1) imageView1.setImageBitmap(bitmap1);
-            } catch (Exception e) {
-                e.printStackTrace();
-                Log.i(TAG,"opencv handle  resize failed");
-            }
+            bitmap1 = PictureHandle.resize_28_Opencv_withoutfill(bitmap1);
 
             String res = tensorflowrun(bitmap1);
-            if(res != null){
+            if(res!=null){
                 if(ans == null){
                     ans = res;
                     ans += " ";
-                }
-                else{
+                }else{
                     ans += res;
                     ans += " ";
                 }
             }
         }
-
         textView.setText("The digits are "+ans);
 
-        /*tess-two check
-        datapath = Environment.getExternalStorageDirectory().getPath();
-        datapath = datapath + "/ZLYTEST";
-        imageView.setImageBitmap(bitmap);
-        try {
-            TessBaseAPI tessBaseAPI = new TessBaseAPI();
-            tessBaseAPI.init(datapath,"eng");
-            tessBaseAPI.setImage(bitmap);
-            textView.setText(tessBaseAPI.getUTF8Text());
-        } catch (Exception e) {
-            Log.e(TAG,Log.getStackTraceString(e));
-        }*/
+
     }
 
     private void tensorflowinit(){
