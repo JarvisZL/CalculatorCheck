@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 public class PictureHandle {
@@ -45,6 +46,7 @@ public class PictureHandle {
 
     private static final String TAG = "JARVIS in handle";
     private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
+    private static int cnt = 0;
 
     public static Bitmap BinarizationWithDenoising_Opencv(Bitmap bitmap,int d){
         Log.i(TAG,"begin to binarizaiton");
@@ -81,8 +83,10 @@ public class PictureHandle {
         Mat smat = new Mat();
         int width = origin.cols(),height = origin.rows();
         Scalar value = new Scalar(WITHE,WITHE,WITHE);
-
-        Core.copyMakeBorder(origin,smat,(CHeight-height)/2,(CHeight-height)/2,(CWidth-width)/2,(CWidth-width)/2, Core.BORDER_CONSTANT,value);
+        //计算填充后的大小
+        int Flength = (int)(max(width,height)*1.2);
+        Core.copyMakeBorder(origin,smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
+        saveImg(filepath+"expand"+(cnt++)+".jpg",smat);
         //缩放
         Imgproc.resize(smat,out,size,0,0,Imgproc.INTER_AREA);
         Utils.matToBitmap(out,res);
@@ -95,10 +99,10 @@ public class PictureHandle {
         for(int i = 0; i < matList.size(); ++i){
             int width = matList.get(i).cols(),height = matList.get(i).rows();
             if(width < 50 && height < 50) continue;
-            System.out.println("fillandsave: "+i);
             Mat smat = new Mat();
+            int Flength = (int)(max(width,height)*1.2);
             Scalar value = new Scalar(WITHE,WITHE,WITHE);
-            Core.copyMakeBorder(matList.get(i),smat,(CHeight-height)/2,(CHeight-height)/2,(CWidth-width)/2,(CWidth-width)/2, Core.BORDER_CONSTANT,value);
+            Core.copyMakeBorder(matList.get(i),smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
             saveImg(filepath+"expand"+i+".jpg",smat);
             smat.release();
         }

@@ -27,7 +27,7 @@ public class PictureShow extends AppCompatActivity {
     private static final String TAG="JARVIS IN PICSHOW";
     public static final String EXTRA_PHOTO = "exphoto";
     private static String datapath;
-    ImageView imageView1,imageView2,imageView3;
+    ImageView imageView1,imageView2,imageView3,imageView4;
     TextView textView;
     Bitmap bitmap;
     private List<Mat> imgs;
@@ -49,8 +49,9 @@ public class PictureShow extends AppCompatActivity {
         setContentView(R.layout.activity_picture_show);
 
         imageView1 = findViewById(R.id.afterbinary);
-   //     imageView2 = findViewById(R.id.afterclip);
-    //    imageView3 = findViewById(R.id.afterresize);
+        imageView2 = findViewById(R.id.temp1);
+        imageView3 = findViewById(R.id.temp2);
+        imageView4 = findViewById(R.id.temp3);
         textView = findViewById(R.id.result);
         Uri imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
 
@@ -88,8 +89,32 @@ public class PictureShow extends AppCompatActivity {
             Log.i(TAG,"Cut failed");
         }
 
-        //testing
-/*
+
+        //without fill(doesn't work)
+        /*
+        tensorflowinit();
+        for(int i = 0; i < imgs.size(); ++i){
+             if(imgs.get(i).cols() < 50 && imgs.get(i).rows() < 50) continue;
+             Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(i).cols(),imgs.get(i).rows(),Bitmap.Config.ARGB_8888);
+             Utils.matToBitmap(imgs.get(i),bitmap1);
+             bitmap1 = PictureHandle.resize_28_Opencv_withoutfill(bitmap1);
+             if(i == 0) imageView2.setImageBitmap(bitmap1);
+             if(i == 1) imageView3.setImageBitmap(bitmap1);
+             String res  = tensorflowrun(bitmap1);
+             if(res!=null){
+                 if(ans == null){
+                     ans = res;
+                     ans += " ";
+                 }else{
+                     ans += res +" ";
+                 }
+             }
+        }
+         */
+
+
+        //testing matrix
+        /*
         Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(1).cols(),imgs.get(1).rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(imgs.get(1),bitmap1);
         bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
@@ -101,7 +126,7 @@ public class PictureShow extends AppCompatActivity {
         Mat mat2 = Imgcodecs.imread(filepath+"expand0.jpg");
         Bitmap bitmap2 = Bitmap.createBitmap(mat2.cols(),mat2.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(mat2,bitmap2);
-        bitmap2 = PictureHandle.resize_28_Opencv_simple(bitmap2);
+        bitmap2 = PictureHandle.resize_28_Opencv_withoutfill(bitmap2);
         Utils.bitmapToMat(bitmap2,mat2);
 
         tensorflowinit();
@@ -110,28 +135,65 @@ public class PictureShow extends AppCompatActivity {
         ans += " ";
         ans += tensorflowrun(bitmap2);
 
-
         System.out.println("----------------------------------------------");
         System.out.println(mat1.dump());
         System.out.println("----------------------------------------------");
         System.out.println(mat2.dump());
+        imageView2.setImageBitmap(bitmap1);
+        imageView3.setImageBitmap(bitmap2);
+         */
 
-*/
+        //without save
+        /*
+        tensorflowinit();
+        for(int i = 0; i < imgs.size(); ++i){
+            if(imgs.get(i).cols() < 50 && imgs.get(i).rows() < 50) continue;
+            Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(i).cols(),imgs.get(i).rows(),Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(imgs.get(i),bitmap1);
+            bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
+            Mat mat = new Mat();
+            Utils.bitmapToMat(bitmap1,mat);
+            System.out.println(mat.dump());
+            if(i==0) imageView2.setImageBitmap(bitmap1);
+            if(i == 1) imageView3.setImageBitmap(bitmap1);
+            if(i == 2) imageView4.setImageBitmap(bitmap1);
+
+            String res = tensorflowrun(bitmap1);
+            if(res!=null){
+                if(ans == null){
+                    ans = res;
+                    ans+= " ";
+                }else{
+                    ans += res+" ";
+                }
+            }
+        }
+         */
+
+
         //clip
-        /*Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
+        /*
+        Log.i(TAG,"before clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
         try {
             bitmap = PictureHandle.imgClip_Opencv(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"opencv handle clip failed");
         }
-        imageView2.setImageBitmap(bitmap);
         Log.i(TAG,"after clip, width:"+bitmap.getWidth()+" height:"+bitmap.getHeight());
-        */
 
-
+        bitmap = PictureHandle.resize_28_Opencv_withoutfill(bitmap);
+        imageView1.setImageBitmap(bitmap);
         tensorflowinit();
+        ans += tensorflowrun(bitmap);
+        Mat mat = new Mat();
+        Utils.bitmapToMat(bitmap,mat);
+        System.out.println(mat.dump());
+         */
 
+
+        //Save img and rec
+        tensorflowinit();
         //fill and save
         try{
             PictureHandle.fillandsave(imgs);
@@ -147,6 +209,10 @@ public class PictureShow extends AppCompatActivity {
             Bitmap bitmap1 = Bitmap.createBitmap(mat.cols(),mat.rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(mat,bitmap1);
             bitmap1 = PictureHandle.resize_28_Opencv_withoutfill(bitmap1);
+            //debug
+            if(i == 0) imageView2.setImageBitmap(bitmap1);
+            if(i == 1) imageView3.setImageBitmap(bitmap1);
+            if(i == 2) imageView4.setImageBitmap(bitmap1);
 
             String res = tensorflowrun(bitmap1);
             if(res!=null){
@@ -159,9 +225,8 @@ public class PictureShow extends AppCompatActivity {
                 }
             }
         }
+
         textView.setText("The digits are "+ans);
-
-
     }
 
     private void tensorflowinit(){
