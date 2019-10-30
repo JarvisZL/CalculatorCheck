@@ -82,11 +82,11 @@ public class PictureHandle {
         //先扩充成正方形
         Mat smat = new Mat();
         int width = origin.cols(),height = origin.rows();
-        Scalar value = new Scalar(WITHE,WITHE,WITHE);
+        Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);//4通道
         //计算填充后的大小
         int Flength = (int)(max(width,height)*1.2);
         Core.copyMakeBorder(origin,smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
-        saveImg(filepath+"expand"+(cnt++)+".jpg",smat);
+        //saveImg(filepath+"expand"+(cnt++)+".jpg",smat);
         //缩放
         Imgproc.resize(smat,out,size,0,0,Imgproc.INTER_AREA);
         Utils.matToBitmap(out,res);
@@ -101,7 +101,7 @@ public class PictureHandle {
             if(width < 50 && height < 50) continue;
             Mat smat = new Mat();
             int Flength = (int)(max(width,height)*1.2);
-            Scalar value = new Scalar(WITHE,WITHE,WITHE);
+            Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);
             Core.copyMakeBorder(matList.get(i),smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
             saveImg(filepath+"expand"+i+".jpg",smat);
             smat.release();
