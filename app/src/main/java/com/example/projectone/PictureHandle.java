@@ -29,7 +29,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 public class PictureHandle {
-    private static final int min_tresh = 3;//波峰最小幅度
+    private static final int min_tresh = 3; //波峰最小幅度
     private static final int min_range = 10;//波峰最小间隔
 
     private static final int VPRO = 0;//segmode
@@ -86,7 +86,7 @@ public class PictureHandle {
         //计算填充后的大小
         int Flength = (int)(max(width,height)*1.2);
         Core.copyMakeBorder(origin,smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
-        //saveImg(filepath+"expand"+(cnt++)+".jpg",smat);
+        //saveImg(filepath+"expand"+(cnt++)+".png",smat);
         //缩放
         Imgproc.resize(smat,out,size,0,0,Imgproc.INTER_AREA);
         Utils.matToBitmap(out,res);
@@ -103,7 +103,7 @@ public class PictureHandle {
             int Flength = (int)(max(width,height)*1.2);
             Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);
             Core.copyMakeBorder(matList.get(i),smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
-            saveImg(filepath+"expand"+i+".jpg",smat);
+            saveImg(filepath+"expand"+i+".png",smat);
             smat.release();
         }
     }
@@ -200,7 +200,7 @@ public class PictureHandle {
           for(int j = 0; j < xcutpoint.size(); ++j){
                List<Mat> finalcutpoint = cutImginmode(xcutpoint.get(j),HPRO);
                for(int k = 0; k < finalcutpoint.size(); ++k){//always only once
-                   saveImg(filepath+"img("+i+","+j+").jpg",finalcutpoint.get(k));
+                   saveImg(filepath+"img("+i+","+j+").png",finalcutpoint.get(k));
                    ret.add(finalcutpoint.get(k));
                }
           }

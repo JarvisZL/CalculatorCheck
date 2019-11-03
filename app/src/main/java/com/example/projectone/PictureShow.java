@@ -26,7 +26,8 @@ public class PictureShow extends AppCompatActivity {
     private static final String TAG="JARVIS IN PICSHOW";
     public static final String EXTRA_PHOTO = "exphoto";
     private static String datapath;
-    ImageView imageView1,imageView2,imageView3,imageView4;
+    ImageView imageView,imageView1,imageView2,imageView3,imageView4,imageView5,imageView6,imageView7,imageView8,imageView9,imageView10;
+    ImageView imageView11,imageView12,imageView13,imageView14,imageView15,imageView16,imageView17,imageView18,imageView19,imageView20;
     TextView textView;
     Bitmap bitmap;
     private List<Mat> imgs;
@@ -47,10 +48,28 @@ public class PictureShow extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_picture_show);
 
-        imageView1 = findViewById(R.id.afterbinary);
-        imageView2 = findViewById(R.id.temp1);
-        imageView3 = findViewById(R.id.temp2);
-        imageView4 = findViewById(R.id.temp3);
+        ans = null;
+        imageView = findViewById(R.id.afterbinary);
+        imageView1 = findViewById(R.id.temp1);
+        imageView2 = findViewById(R.id.temp2);
+        imageView3 = findViewById(R.id.temp3);
+        imageView4 = findViewById(R.id.temp4);
+        imageView5 = findViewById(R.id.temp5);
+        imageView6 = findViewById(R.id.temp6);
+        imageView7 = findViewById(R.id.temp7);
+        imageView8 = findViewById(R.id.temp8);
+        imageView9 = findViewById(R.id.temp9);
+        imageView10 = findViewById(R.id.temp10);
+        imageView11 = findViewById(R.id.temp11);
+        imageView12 = findViewById(R.id.temp12);
+        imageView13 = findViewById(R.id.temp13);
+        imageView14 = findViewById(R.id.temp14);
+        imageView15 = findViewById(R.id.temp15);
+        imageView16 = findViewById(R.id.temp16);
+        imageView17 = findViewById(R.id.temp17);
+        imageView18 = findViewById(R.id.temp18);
+        imageView19 = findViewById(R.id.temp19);
+        imageView20 = findViewById(R.id.temp20);
         textView = findViewById(R.id.result);
         Uri imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
 
@@ -70,14 +89,17 @@ public class PictureShow extends AppCompatActivity {
             Log.i(TAG,"opencv handle binarization failed");
         }
 
+
         //erode and bilate
+        /*
         try {
             bitmap = PictureHandle.erodeAnddialte_Opencv(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"opencv handle erode and dilate failed");
         }
-        imageView1.setImageBitmap(bitmap);
+         */
+        imageView.setImageBitmap(bitmap);
 
 
         //Cutimg
@@ -123,19 +145,67 @@ public class PictureShow extends AppCompatActivity {
 
         //without save
         tensorflowinit();
+        int judge = 0;
         for(int i = 0; i < imgs.size(); ++i){
             if(imgs.get(i).cols() < 50 && imgs.get(i).rows() < 50) continue;
             Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(i).cols(),imgs.get(i).rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(imgs.get(i),bitmap1);
+            bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1);
             bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
             Mat mat = new Mat();
             Utils.bitmapToMat(bitmap1,mat);
            // System.out.println(mat.dump());
-            /*
-            if(i==0) imageView2.setImageBitmap(bitmap1);
-            if(i == 1) imageView3.setImageBitmap(bitmap1);
-            if(i == 2) imageView4.setImageBitmap(bitmap1);
-            */
+            switch (judge){
+                case 0: switch (i){
+                    case 0: imageView1.setImageBitmap(bitmap1); break;
+                    case 1: imageView2.setImageBitmap(bitmap1); break;
+                    case 2: imageView3.setImageBitmap(bitmap1); break;
+                    case 3: imageView4.setImageBitmap(bitmap1); break;
+                    case 4: imageView5.setImageBitmap(bitmap1); break;
+                    case 5: imageView6.setImageBitmap(bitmap1); break;
+                    case 6: imageView7.setImageBitmap(bitmap1); break;
+                    case 7: imageView8.setImageBitmap(bitmap1); break;
+                    case 8: imageView9.setImageBitmap(bitmap1); break;
+                    case 9: imageView10.setImageBitmap(bitmap1); break;
+                    case 10: imageView11.setImageBitmap(bitmap1); break;
+                    case 11: imageView12.setImageBitmap(bitmap1); break;
+                    case 12: imageView13.setImageBitmap(bitmap1); break;
+                    case 13: imageView14.setImageBitmap(bitmap1); break;
+                    case 14: imageView15.setImageBitmap(bitmap1); break;
+                    case 15: imageView16.setImageBitmap(bitmap1); break;
+                    case 16: imageView17.setImageBitmap(bitmap1); break;
+                    case 17: imageView18.setImageBitmap(bitmap1); break;
+                    case 18: imageView19.setImageBitmap(bitmap1); break;
+                    case 19: imageView20.setImageBitmap(bitmap1); break;
+                    default: break;
+                } break;
+                case 1:  switch (i){
+                    case 20: imageView1.setImageBitmap(bitmap1); break;
+                    case 21: imageView2.setImageBitmap(bitmap1); break;
+                    case 22: imageView3.setImageBitmap(bitmap1); break;
+                    case 23: imageView4.setImageBitmap(bitmap1); break;
+                    case 24: imageView5.setImageBitmap(bitmap1); break;
+                    case 25: imageView6.setImageBitmap(bitmap1); break;
+                    case 26: imageView7.setImageBitmap(bitmap1); break;
+                    case 27: imageView8.setImageBitmap(bitmap1); break;
+                    case 28: imageView9.setImageBitmap(bitmap1); break;
+                    case 29: imageView10.setImageBitmap(bitmap1); break;
+                    case 30: imageView11.setImageBitmap(bitmap1); break;
+                    case 31: imageView12.setImageBitmap(bitmap1); break;
+                    case 32: imageView13.setImageBitmap(bitmap1); break;
+                    case 33: imageView14.setImageBitmap(bitmap1); break;
+                    case 34: imageView15.setImageBitmap(bitmap1); break;
+                    case 35: imageView16.setImageBitmap(bitmap1); break;
+                    case 36: imageView17.setImageBitmap(bitmap1); break;
+                    case 37: imageView18.setImageBitmap(bitmap1); break;
+                    case 38: imageView19.setImageBitmap(bitmap1); break;
+                    case 39: imageView20.setImageBitmap(bitmap1); break;
+                    default: break;
+                } break;
+                default: break;
+            }
+
+
             String res = tensorflowrun(bitmap1);
             if(res!=null){
                 if(ans == null){
