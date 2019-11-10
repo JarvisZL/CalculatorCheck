@@ -28,6 +28,7 @@ public class PictureShow extends AppCompatActivity {
     private static String datapath;
     ImageView imageView,imageView1,imageView2,imageView3,imageView4,imageView5,imageView6,imageView7,imageView8,imageView9,imageView10;
     ImageView imageView11,imageView12,imageView13,imageView14,imageView15,imageView16,imageView17,imageView18,imageView19,imageView20;
+    ImageView imageView21,imageView22,imageView23,imageView24,imageView25,imageView26,imageView27,imageView28,imageView29,imageView30;
     TextView textView;
     Bitmap bitmap;
     private List<Mat> imgs;
@@ -70,6 +71,16 @@ public class PictureShow extends AppCompatActivity {
         imageView18 = findViewById(R.id.temp18);
         imageView19 = findViewById(R.id.temp19);
         imageView20 = findViewById(R.id.temp20);
+        imageView21 = findViewById(R.id.temp21);
+        imageView22 = findViewById(R.id.temp22);
+        imageView23 = findViewById(R.id.temp23);
+        imageView24 = findViewById(R.id.temp24);
+        imageView25 = findViewById(R.id.temp25);
+        imageView26 = findViewById(R.id.temp26);
+        imageView27 = findViewById(R.id.temp27);
+        imageView28 = findViewById(R.id.temp28);
+        imageView29 = findViewById(R.id.temp29);
+        imageView30 = findViewById(R.id.temp30);
         textView = findViewById(R.id.result);
         Uri imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
 
@@ -104,7 +115,7 @@ public class PictureShow extends AppCompatActivity {
 
         //Cutimg
         try {
-           imgs = PictureHandle.cutImg(bitmap);
+            imgs = PictureHandle.cutImg(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"Cut failed");
@@ -143,20 +154,23 @@ public class PictureShow extends AppCompatActivity {
 
 */
 
+
+
         //without save
         tensorflowinit();
         int judge = 0;
+        int cnt = 0;
         for(int i = 0; i < imgs.size(); ++i){
-            if(imgs.get(i).cols() < 50 && imgs.get(i).rows() < 50) continue;
+            if(imgs.get(i).cols() < 40 && imgs.get(i).rows() < 40) continue;
             Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(i).cols(),imgs.get(i).rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(imgs.get(i),bitmap1);
             bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1);
             bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
             Mat mat = new Mat();
             Utils.bitmapToMat(bitmap1,mat);
-           // System.out.println(mat.dump());
+
             switch (judge){
-                case 0: switch (i){
+                case 0: switch (cnt){
                     case 0: imageView1.setImageBitmap(bitmap1); break;
                     case 1: imageView2.setImageBitmap(bitmap1); break;
                     case 2: imageView3.setImageBitmap(bitmap1); break;
@@ -177,34 +191,54 @@ public class PictureShow extends AppCompatActivity {
                     case 17: imageView18.setImageBitmap(bitmap1); break;
                     case 18: imageView19.setImageBitmap(bitmap1); break;
                     case 19: imageView20.setImageBitmap(bitmap1); break;
+                    case 20: imageView21.setImageBitmap(bitmap1); break;
+                    case 21: imageView22.setImageBitmap(bitmap1); break;
+                    case 22: imageView23.setImageBitmap(bitmap1); break;
+                    case 23: imageView24.setImageBitmap(bitmap1); break;
+                    case 24: imageView25.setImageBitmap(bitmap1); break;
+                    case 25: imageView26.setImageBitmap(bitmap1); break;
+                    case 26: imageView27.setImageBitmap(bitmap1); break;
+                    case 27: imageView28.setImageBitmap(bitmap1); break;
+                    case 28: imageView29.setImageBitmap(bitmap1); break;
+                    case 29: imageView30.setImageBitmap(bitmap1); break;
                     default: break;
                 } break;
-                case 1:  switch (i){
-                    case 20: imageView1.setImageBitmap(bitmap1); break;
-                    case 21: imageView2.setImageBitmap(bitmap1); break;
-                    case 22: imageView3.setImageBitmap(bitmap1); break;
-                    case 23: imageView4.setImageBitmap(bitmap1); break;
-                    case 24: imageView5.setImageBitmap(bitmap1); break;
-                    case 25: imageView6.setImageBitmap(bitmap1); break;
-                    case 26: imageView7.setImageBitmap(bitmap1); break;
-                    case 27: imageView8.setImageBitmap(bitmap1); break;
-                    case 28: imageView9.setImageBitmap(bitmap1); break;
-                    case 29: imageView10.setImageBitmap(bitmap1); break;
-                    case 30: imageView11.setImageBitmap(bitmap1); break;
-                    case 31: imageView12.setImageBitmap(bitmap1); break;
-                    case 32: imageView13.setImageBitmap(bitmap1); break;
-                    case 33: imageView14.setImageBitmap(bitmap1); break;
-                    case 34: imageView15.setImageBitmap(bitmap1); break;
-                    case 35: imageView16.setImageBitmap(bitmap1); break;
-                    case 36: imageView17.setImageBitmap(bitmap1); break;
-                    case 37: imageView18.setImageBitmap(bitmap1); break;
-                    case 38: imageView19.setImageBitmap(bitmap1); break;
-                    case 39: imageView20.setImageBitmap(bitmap1); break;
+                case 1:  switch (cnt){
+                    case 30: imageView1.setImageBitmap(bitmap1); break;
+                    case 31: imageView2.setImageBitmap(bitmap1); break;
+                    case 32: imageView3.setImageBitmap(bitmap1); break;
+                    case 33: imageView4.setImageBitmap(bitmap1); break;
+                    case 34: imageView5.setImageBitmap(bitmap1); break;
+                    case 35: imageView6.setImageBitmap(bitmap1); break;
+                    case 36: imageView7.setImageBitmap(bitmap1); break;
+                    case 37: imageView8.setImageBitmap(bitmap1); break;
+                    case 38: imageView9.setImageBitmap(bitmap1); break;
+                    case 39: imageView10.setImageBitmap(bitmap1); break;
+                    case 40: imageView11.setImageBitmap(bitmap1); break;
+                    case 41: imageView12.setImageBitmap(bitmap1); break;
+                    case 42: imageView13.setImageBitmap(bitmap1); break;
+                    case 43: imageView14.setImageBitmap(bitmap1); break;
+                    case 44: imageView15.setImageBitmap(bitmap1); break;
+                    case 45: imageView16.setImageBitmap(bitmap1); break;
+                    case 46: imageView17.setImageBitmap(bitmap1); break;
+                    case 47: imageView18.setImageBitmap(bitmap1); break;
+                    case 48: imageView19.setImageBitmap(bitmap1); break;
+                    case 49: imageView20.setImageBitmap(bitmap1); break;
+                    case 50: imageView22.setImageBitmap(bitmap1); break;
+                    case 51: imageView23.setImageBitmap(bitmap1); break;
+                    case 52: imageView24.setImageBitmap(bitmap1); break;
+                    case 53: imageView25.setImageBitmap(bitmap1); break;
+                    case 54: imageView26.setImageBitmap(bitmap1); break;
+                    case 55: imageView27.setImageBitmap(bitmap1); break;
+                    case 56: imageView28.setImageBitmap(bitmap1); break;
+                    case 57: imageView29.setImageBitmap(bitmap1); break;
+                    case 58: imageView30.setImageBitmap(bitmap1); break;
                     default: break;
                 } break;
                 default: break;
             }
 
+            cnt++;
 
             String res = tensorflowrun(bitmap1);
             if(res!=null){
@@ -216,6 +250,8 @@ public class PictureShow extends AppCompatActivity {
                 }
             }
         }
+
+
 
 
         //clip

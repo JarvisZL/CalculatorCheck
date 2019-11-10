@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -45,7 +46,8 @@ public class PictureHandle {
     private static final int SHeight = 28;
 
     private static final String TAG = "JARVIS in handle";
-    private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
+    private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST";
+    private static int dcntrow = 0, dcntcol = 0;
     private static int cnt = 0;
 
     public static Bitmap BinarizationWithDenoising_Opencv(Bitmap bitmap,int d){
@@ -63,7 +65,7 @@ public class PictureHandle {
         Log.i(TAG,"After denoising");
         Imgproc.adaptiveThreshold(bf, out, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 4.5D);
         Log.i(TAG,"After adaptiveThreshold");
-
+      //  Imgproc.Canny(bf,out,100,200);
         Utils.matToBitmap(out, result);
         origin.release();
         gray.release();
@@ -86,7 +88,7 @@ public class PictureHandle {
         //计算填充后的大小
         int Flength = (int)(max(width,height)*1.2);
         Core.copyMakeBorder(origin,smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
-        //saveImg(filepath+"expand"+(cnt++)+".png",smat);
+        saveImg(filepath+"/afterseg/expand"+(cnt++)+".png",smat);
         //缩放
         Imgproc.resize(smat,out,size,0,0,Imgproc.INTER_AREA);
         Utils.matToBitmap(out,res);
@@ -103,7 +105,7 @@ public class PictureHandle {
             int Flength = (int)(max(width,height)*1.2);
             Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);
             Core.copyMakeBorder(matList.get(i),smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
-            saveImg(filepath+"expand"+i+".png",smat);
+            saveImg(filepath+"/afterseg/expand"+i+".png",smat);
             smat.release();
         }
     }
@@ -179,28 +181,52 @@ public class PictureHandle {
                     project.put(i,j,WITHE);
                 }
             }
-            saveImg(filepath+"line.png",project);
+            saveImg(filepath+"/pic/row"+(dcntrow++)+".png",project);
         }
         else if(mode == VPRO){
-
+            int width = pos.length;
+            int height = Arrays.stream(pos).max().getAsInt();
+            Mat project = Mat.zeros(height,width,CvType.CV_8SC1);
+            for(int i = 0; i < project.cols(); ++i){
+                for(int j = 0; j < pos[i]; ++j){
+                    project.put(j,i, WITHE);
+                }
+            }
+            saveImg(filepath+"/pic/col"+(dcntcol++)+".png",project);
         }
 
     }
 
-
+    //水平投影切割后连通域切割
     @RequiresApi(api = Build.VERSION_CODES.N)
     public static List<Mat> cutImg(Bitmap bitmap){
+        Mat origin = new Mat();
+        Utils.bitmapToMat(bitmap,origin);
+        List<Mat> ret = new ArrayList<>();
+        List<Mat> ycutpoint = cutImginmode(origin,HPRO);
+        for(int i = 0; i < ycutpoint.size(); ++i){
+            Bitmap temp = Bitmap.createBitmap(ycutpoint.get(i).cols(),ycutpoint.get(i).rows(),Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(ycutpoint.get(i),temp);
+            List<Mat> ss = cutImgbyseedfill(temp);
+            ret.addAll(ss);
+        }
+        return ret;
+    }
+
+    //投影切割
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static List<Mat> cutImgbyprojection(Bitmap bitmap){
        Mat origin = new Mat();
        Utils.bitmapToMat(bitmap,origin);
        List<Mat> ret = new ArrayList<>();
        List<Mat> ycutpoint = cutImginmode(origin,HPRO);//得到了每一行图片的矩阵。
        for(int i = 0; i < ycutpoint.size(); ++i){
-          // saveImg(filepath+"line"+i+".png",ycutpoint.get(i));
+          // saveImg(filepath+"/afterseg/line"+i+".png",ycutpoint.get(i));
            List<Mat> xcutpoint = cutImginmode(ycutpoint.get(i), VPRO);
           for(int j = 0; j < xcutpoint.size(); ++j){
                List<Mat> finalcutpoint = cutImginmode(xcutpoint.get(j),HPRO);
                for(int k = 0; k < finalcutpoint.size(); ++k){//always only once
-                   saveImg(filepath+"img("+i+","+j+").png",finalcutpoint.get(k));
+                   saveImg(filepath+"/afterseg/img("+i+","+j+").png",finalcutpoint.get(k));
                    ret.add(finalcutpoint.get(k));
                }
           }
@@ -208,8 +234,6 @@ public class PictureHandle {
        origin.release();
        return ret;
     }
-
-
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public static List<Mat> cutImginmode(Mat origin,int mode){
@@ -225,7 +249,7 @@ public class PictureHandle {
                 }
             }
             //画图
-           // Drawprojection(xNum,mode);
+           Drawprojection(xNum,mode);
             //分割
             List<Mat> YMat = new ArrayList<>();
             int begin =-1,end = 0;
@@ -269,7 +293,7 @@ public class PictureHandle {
                 }
             }
             //画图
-            // Drawprojection(yNum,mode);
+            Drawprojection(yNum,mode);
             //分割
             List<Mat> XMat = new ArrayList<>();
             int begin =-1,end = 0;
@@ -303,8 +327,119 @@ public class PictureHandle {
             return null;
     }
 
+    //全连通域切割
+    public static List<Mat> cutImgbyseedfill(Bitmap bitmap){
+        Mat origin  = new Mat();
+        Utils.bitmapToMat(bitmap,origin);
+        int label = 0;
+        ArrayList<BOCD> bocds = new ArrayList<>();
+        int[][] mmap = new int[origin.rows()][origin.cols()];
+        Stack<Point> stack = new Stack<>();
+        stack.clear();
 
+        for(int j = 0; j < origin.cols(); ++j){
+            for (int i = 0; i < origin.rows(); ++i){
+                if(BLACK == (int)origin.get(i, j)[0] && mmap[i][j] == 0){
+                        mmap[i][j] = ++label;
+                        stack.push(new Point(j,i));
+                        bocds.add(new BOCD(label,j,j,i,i));
+                        //get the whole connected domain
+                        while(!stack.empty()){
+                            Point seed = stack.pop();
+                            int c = (int)seed.x, r = (int) seed.y;
+                            //top
+                            if(r - 1 >= 0 && mmap[r-1][c] == 0 && BLACK == (int)origin.get(r-1,c)[0]){
+                                mmap[r-1][c] = label;
+                                stack.push(new Point(c,r-1));
+                                //update top bound
+                                BOCD bocd = bocds.get(label-1);//from zero
+                                bocd.setTop(min(r-1,bocd.getTop()));
+                                bocds.set(label-1,bocd);
+                            }
+                            //bottom
+                            if(r + 1 < origin.rows() && mmap[r+1][c] == 0 && BLACK == (int)origin.get(r+1,c)[0]){
+                                mmap[r+1][c] = label;
+                                stack.push(new Point(c,r+1));
+                                //update bottom bound
+                                BOCD bocd = bocds.get(label-1);
+                                bocd.setBottom(max(r+1,bocd.getBottom()));
+                                bocds.set(label-1,bocd);
+                            }
+                            //left
+                            if(c - 1 >= 0 && mmap[r][c-1] == 0 && BLACK == (int)origin.get(r,c-1)[0]){
+                                mmap[r][c-1] = label;
+                                stack.push(new Point(c-1,r));
+                                //update left bound
+                                BOCD bocd = bocds.get(label-1);
+                                bocd.setLeft(min(c-1,bocd.getLeft()));
+                                bocds.set(label-1,bocd);
+                            }
+                            //right
+                            if(c + 1 < origin.cols() && mmap[r][c+1] == 0 && BLACK == (int)origin.get(r,c+1)[0]){
+                                mmap[r][c+1] = label;
+                                stack.push(new Point(c+1,r));
+                                //update right bound
+                                BOCD bocd = bocds.get(label-1);
+                                bocd.setRight(max(c+1,bocd.getRight()));
+                                bocds.set(label-1,bocd);
+                            }
+                            //left-top
+                            if(c - 1 >= 0 && r - 1 >= 0 && mmap[r-1][c-1] == 0 && BLACK == (int)origin.get(r-1,c-1)[0]){
+                                mmap[r-1][c-1] = label;
+                                stack.push(new Point(c-1,r-1));
+                                //update left and top bound
+                                BOCD bocd = bocds.get(label-1);
+                                bocd.setLeft(min(c-1,bocd.getLeft()));
+                                bocd.setTop(min(r-1,bocd.getTop()));
+                                bocds.set(label-1,bocd);
+                            }
+                            //left-bottom
+                            if(c-1 >= 0 && r+1 < origin.rows() && mmap[r+1][c-1] == 0 && BLACK == (int)origin.get(r+1,c-1)[0]){
+                                mmap[r+1][c-1] = label;
+                                stack.push(new Point(c-1, r+1));
+                                //update left and bottom bound
+                                BOCD bocd = bocds.get(label-1);
+                                bocd.setLeft(min(c-1,bocd.getLeft()));
+                                bocd.setBottom(max(r+1,bocd.getBottom()));
+                                bocds.set(label-1,bocd);
+                            }
+                            //right-top
+                            if(c+1 < origin.cols() && r-1 >= 0 && mmap[r-1][c+1] == 0 && BLACK == (int)origin.get(r-1,c+1)[0]){
+                                mmap[r-1][c+1] = label;
+                                stack.push(new Point(c+1,r-1));
+                                //update right and top bound
+                                BOCD bocd = bocds.get(label-1);
+                                bocd.setRight(max(c+1,bocd.getRight()));
+                                bocd.setTop(min(r-1,bocd.getTop()));
+                                bocds.set(label-1,bocd);
+                            }
+                            //right-bottom
+                            if(c+1 < origin.cols() && r+1 < origin.rows() && mmap[r+1][c+1] == 0 && BLACK == (int)origin.get(r+1,c+1)[0]){
+                                mmap[r+1][c+1] = label;
+                                stack.push(new Point(c+1,r+1));
+                                //update right and bottom bound
+                                BOCD bocd = bocds.get(label-1);
+                                bocd.setRight(max(c+1,bocd.getRight()));
+                                bocd.setBottom(max(r+1,bocd.getBottom()));
+                                bocds.set(label-1,bocd);
+                            }
+                        }
+                }
+            }
+        }
 
+        List<Mat> ret = new ArrayList<>();
+
+        for(int i = 0; i < bocds.size();++i){
+            BOCD bocd = bocds.get(i);
+          //System.out.println(i+" left: "+bocd.getLeft()+" right: "+bocd.getRight()+" top: "+bocd.getTop()+" bottom: "+bocd.getBottom());
+            int width = bocd.getRight()-bocd.getLeft()+1;
+            int height = bocd.getBottom()-bocd.getTop()+1;
+            Mat res = new Mat(origin,new Rect(bocd.getLeft(),bocd.getTop(),width,height));
+            ret.add(res);
+        }
+        return ret;
+    }
 
     public  static Bitmap rotateBitmap(Bitmap bitmap, int degree) {
         Bitmap ret = null;
@@ -324,10 +459,10 @@ public class PictureHandle {
         return ret;
     }
 
-    public  static int getBitmapdgree(String filepath) {
+    public  static int getBitmapdgree(String path) {
         int ret = 0;
         try {
-            ExifInterface exifInterface = new ExifInterface(filepath);
+            ExifInterface exifInterface = new ExifInterface(path);
             int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION,ExifInterface.ORIENTATION_NORMAL);
             switch (orientation){
                 case ExifInterface.ORIENTATION_ROTATE_90:
@@ -350,10 +485,51 @@ public class PictureHandle {
         return ret;
     }
 
+}
 
+class BOCD{
+    private int index;
+    private int left,right,top,bottom;
 
-
-
-
-
+    public BOCD(int index){
+        this.index = index;
+        left = right = top = bottom = 0;
+    }
+    public BOCD(int index,int left,int right,int top,int bottom){
+        this.index = index;
+        this.left = left;
+        this.right = right;
+        this.top = top;
+        this.bottom = bottom;
+    }
+    public int getIndex(){
+        return index;
+    }
+    public int getBottom() {
+        return bottom;
+    }
+    public int getLeft() {
+        return left;
+    }
+    public int getRight() {
+        return right;
+    }
+    public int getTop() {
+        return top;
+    }
+    public void setIndex(int index) {
+        this.index = index;
+    }
+    public void setBottom(int bottom) {
+        this.bottom = bottom;
+    }
+    public void setLeft(int left) {
+        this.left = left;
+    }
+    public void setTop(int top) {
+        this.top = top;
+    }
+    public void setRight(int right) {
+        this.right = right;
+    }
 }
