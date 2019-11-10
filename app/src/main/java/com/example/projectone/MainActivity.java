@@ -30,13 +30,10 @@ import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
-
-
     private static final int REQUEST_CODE = 1;
     Button check,camera,choose;
     ImageView image;
     File file;
-
 
     private static String filepath;
     private static final int TAKE_PHOTO = 200;
@@ -60,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
         // Dynamic Permission
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE);
-
 
         choose  = findViewById(R.id.choose);
         check  = findViewById(R.id.button3);
@@ -126,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

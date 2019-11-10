@@ -305,6 +305,7 @@ public class PictureShow extends AppCompatActivity {
         textView.setText("The digits are "+ans);
     }
 
+
     private void tensorflowinit(){
         try{
             mclassifier = new Classifier(PictureShow.this);
