@@ -26,8 +26,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
+import static java.lang.Math.PI;
+import static java.lang.Math.cos;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.round;
+import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
 
 public class PictureHandle {
     private static final int min_tresh = 3; //波峰最小幅度
@@ -58,7 +63,7 @@ public class PictureHandle {
         Mat bf = new Mat();
         Mat out = new Mat();
         Utils.bitmapToMat(bitmap, origin);
-        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGBA2GRAY);
         Log.i(TAG,"After cvtColor");
 
         Imgproc.bilateralFilter(gray, bf, d, (double) (d * 2), (double) (d / 2));
@@ -441,6 +446,7 @@ public class PictureHandle {
         return ret;
     }
 
+    //获取图片时旋转
     public  static Bitmap rotateBitmap(Bitmap bitmap, int degree) {
         Bitmap ret = null;
         Matrix matrix = new Matrix();
@@ -458,7 +464,6 @@ public class PictureHandle {
         }
         return ret;
     }
-
     public  static int getBitmapdgree(String path) {
         int ret = 0;
         try {
@@ -483,6 +488,74 @@ public class PictureHandle {
         }
         Log.i(TAG, String.valueOf(ret));
         return ret;
+    }
+
+    //角度矫正
+    public static Bitmap ImgRecify(Bitmap bitmap){
+        Mat origin = new Mat();
+        Utils.bitmapToMat(bitmap,origin);
+        double degree = calcdegree(origin);
+        Mat res = rotateImg(origin,degree);
+        Bitmap bitmap1 = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(res,bitmap1);
+        return bitmap1;
+    }
+
+    public static Mat rotateImg(Mat origin, double degree){
+        Point center = new Point();
+        center.x = (float)(origin.cols()/2.0);
+        center.y = (float)(origin.rows()/2.0);
+        int length = (int) sqrt(origin.cols()*origin.cols()+origin.rows()*origin.rows());
+        Mat M = Imgproc.getRotationMatrix2D(center,degree,1);
+        Mat ret = new Mat();
+        Imgproc.warpAffine(origin,ret,M, new Size(length,length),1,0, new Scalar(WITHE, WITHE,WITHE,WITHE));
+        return ret;
+    }
+
+    private static double calcdegree(Mat origin){
+        Mat midmat = new Mat();
+        Mat gray = new Mat();
+        Imgproc.Canny(origin,midmat,50,200,3);
+        Imgproc.cvtColor(midmat,gray,Imgproc.COLOR_GRAY2BGRA);
+        Mat lines = new Mat();
+        int threshold = 351;
+        do{
+            threshold -= 50;
+            Imgproc.HoughLines(midmat,lines,1, PI/180,threshold);
+        }while(lines.rows() <= 5 && threshold > 0);
+
+        Log.i(TAG,"threshold:" + threshold);
+        Log.i(TAG,"linesc: "+lines.cols());
+        Log.i(TAG,"linesr: "+lines.rows());
+
+        //Draw lines
+        double[] data;
+        double rho, theta;
+        Point pt1 = new Point();
+        Point pt2 = new Point();
+        double a,b,x0,y0;
+        double sumangle = 0;
+
+        for(int i = 0; i < lines.rows(); ++i){
+            data = lines.get(i,0);
+            rho = data[0]; theta = data[1];
+            a = cos(theta); b = sin(theta);
+            x0 = a*rho; y0 = b*rho;
+            pt1.x = round(x0+5000*(-b));
+            pt1.y = round(y0+5000*a);
+            pt2.x = round(x0-5000*(-b));
+            pt2.y = round(y0-5000*a);
+            Imgproc.line(gray,pt1,pt2,new Scalar(255,255,255,1),1);
+
+            sumangle += theta;
+        }
+
+        saveImg(filepath+"/pic/line.png",gray);
+
+
+        double averageangle = sumangle/lines.rows();
+
+        return (averageangle/PI*180)-90;
     }
 
 }

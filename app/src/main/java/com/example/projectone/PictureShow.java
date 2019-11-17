@@ -15,7 +15,6 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
 import java.io.IOException;
@@ -92,6 +91,7 @@ public class PictureShow extends AppCompatActivity {
             Log.i(TAG,"from uri to bitmap failed");
         }
 
+
         //binary
         try {
             bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,10);
@@ -99,6 +99,9 @@ public class PictureShow extends AppCompatActivity {
             e.printStackTrace();
             Log.i(TAG,"opencv handle binarization failed");
         }
+
+        //correctAngle
+        bitmap = PictureHandle.ImgRecify(bitmap);
 
 
         //erode and bilate
@@ -114,12 +117,12 @@ public class PictureShow extends AppCompatActivity {
 
 
         //Cutimg
-        try {
-            imgs = PictureHandle.cutImg(bitmap);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i(TAG,"Cut failed");
-        }
+//        try {
+//            imgs = PictureHandle.cutImg(bitmap);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            Log.i(TAG,"Cut failed");
+//        }
 
 
         //testing matrix
@@ -156,7 +159,9 @@ public class PictureShow extends AppCompatActivity {
 
 
 
+
         //without save
+        /*
         tensorflowinit();
         int judge = 0;
         int cnt = 0;
@@ -250,6 +255,8 @@ public class PictureShow extends AppCompatActivity {
                 }
             }
         }
+        */
+
 
 
 
