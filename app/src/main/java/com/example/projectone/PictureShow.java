@@ -15,10 +15,12 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 
 import java.io.IOException;
 import java.util.List;
+
 
 public class PictureShow extends AppCompatActivity {
 
@@ -101,7 +103,7 @@ public class PictureShow extends AppCompatActivity {
         }
 
         //correctAngle
-        bitmap = PictureHandle.ImgRecify(bitmap);
+        bitmap = PictureHandle.ImgRecifyByHL(bitmap);
 
 
         //erode and bilate
@@ -117,51 +119,17 @@ public class PictureShow extends AppCompatActivity {
 
 
         //Cutimg
-//        try {
-//            imgs = PictureHandle.cutImg(bitmap);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            Log.i(TAG,"Cut failed");
-//        }
-
-
-        //testing matrix
-/*
-        System.out.println(imgs.get(1).dump());
-        Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(1).cols(),imgs.get(1).rows(),Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(imgs.get(1),bitmap1);
-        bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
-        Mat mat1 = new Mat();
-        Utils.bitmapToMat(bitmap1,mat1);
-
-        System.out.println("----------------------------------------------");
-
-        Mat mat2 = Imgcodecs.imread(filepath+"expand0.jpg");
-        Bitmap bitmap2 = Bitmap.createBitmap(mat2.cols(),mat2.rows(),Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(mat2,bitmap2);
-        bitmap2 = PictureHandle.resize_28_Opencv_withoutfill(bitmap2);
-        Utils.bitmapToMat(bitmap2,mat2);
-
-        tensorflowinit();
-
-        ans = tensorflowrun(bitmap1);
-        ans += " ";
-        ans += tensorflowrun(bitmap2);
-
-        System.out.println("----------------------------------------------");
-        System.out.println(mat1.dump());
-        System.out.println("----------------------------------------------");
-        System.out.println(mat2.dump());
-        imageView2.setImageBitmap(bitmap1);
-        imageView3.setImageBitmap(bitmap2);
-
-*/
-
+        try {
+            imgs = PictureHandle.cutImg(bitmap);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.i(TAG,"Cut failed");
+        }
 
 
 
         //without save
-        /*
+
         tensorflowinit();
         int judge = 0;
         int cnt = 0;
@@ -255,9 +223,6 @@ public class PictureShow extends AppCompatActivity {
                 }
             }
         }
-        */
-
-
 
 
 

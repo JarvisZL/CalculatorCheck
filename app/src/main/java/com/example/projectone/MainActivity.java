@@ -28,6 +28,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE = 1;
@@ -45,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG,"Opencv faied");
         }
     }
+
+
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)//android4.3
     @Override

@@ -13,8 +13,11 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -27,15 +30,17 @@ import java.util.List;
 import java.util.Stack;
 
 import static java.lang.Math.PI;
+import static java.lang.Math.atan;
 import static java.lang.Math.cos;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.lang.Math.sin;
 import static java.lang.Math.sqrt;
+import static java.lang.Math.tan;
 
 public class PictureHandle {
-    private static final int min_tresh = 3; //波峰最小幅度
+    private static final int min_tresh = 2; //波峰最小幅度
     private static final int min_range = 10;//波峰最小间隔
 
     private static final int VPRO = 0;//segmode
@@ -57,13 +62,13 @@ public class PictureHandle {
 
     public static Bitmap BinarizationWithDenoising_Opencv(Bitmap bitmap,int d){
         Log.i(TAG,"begin to binarizaiton");
-        Bitmap result = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Bitmap result = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.RGB_565);
         Mat origin = new Mat();
         Mat gray = new Mat();
         Mat bf = new Mat();
         Mat out = new Mat();
         Utils.bitmapToMat(bitmap, origin);
-        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGBA2GRAY);
+        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGB2GRAY);
         Log.i(TAG,"After cvtColor");
 
         Imgproc.bilateralFilter(gray, bf, d, (double) (d * 2), (double) (d / 2));
@@ -81,7 +86,7 @@ public class PictureHandle {
 
 
     public static Bitmap resize_28_Opencv(Bitmap bitmap) {
-        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.ARGB_8888);
+        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.RGB_565);
         Mat origin = new Mat();
         Mat out  = new Mat();
         Size size = new Size(SWidth,SHeight);
@@ -89,7 +94,7 @@ public class PictureHandle {
         //先扩充成正方形
         Mat smat = new Mat();
         int width = origin.cols(),height = origin.rows();
-        Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);//4通道
+        Scalar value = new Scalar(WITHE,WITHE,WITHE);//4通道
         //计算填充后的大小
         int Flength = (int)(max(width,height)*1.2);
         Core.copyMakeBorder(origin,smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
@@ -108,7 +113,7 @@ public class PictureHandle {
             if(width < 50 && height < 50) continue;
             Mat smat = new Mat();
             int Flength = (int)(max(width,height)*1.2);
-            Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);
+            Scalar value = new Scalar(WITHE,WITHE,WITHE);
             Core.copyMakeBorder(matList.get(i),smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
             saveImg(filepath+"/afterseg/expand"+i+".png",smat);
             smat.release();
@@ -116,7 +121,7 @@ public class PictureHandle {
     }
 
     public static Bitmap resize_28_Opencv_withoutfill(Bitmap bitmap) {
-        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.ARGB_8888);
+        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.RGB_565);
         Mat origin = new Mat();
         Mat out  = new Mat();
         Size size = new Size(SWidth,SHeight);
@@ -136,7 +141,7 @@ public class PictureHandle {
         else{
             int newH = min(CHeight,bitmap.getHeight());
             int newW = min(CWidth,bitmap.getWidth());
-            Bitmap res = Bitmap.createBitmap(newW,newH,Bitmap.Config.ARGB_8888);
+            Bitmap res = Bitmap.createBitmap(newW,newH,Bitmap.Config.RGB_565);
             Mat origin = new Mat();
             int x_start,y_start;
             x_start = bitmap.getWidth()/2-newW/2;
@@ -151,7 +156,7 @@ public class PictureHandle {
 
     //腐蚀和膨胀
     public static Bitmap erodeAnddialte_Opencv(Bitmap bitmap){
-        Bitmap res = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(),Bitmap.Config.ARGB_8888);
+        Bitmap res = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(),Bitmap.Config.RGB_565);
         Mat origin = new Mat();
         Mat out = new Mat();
         Mat structImg = Imgproc.getStructuringElement(Imgproc.MORPH_RECT,new Size(5,2));
@@ -210,7 +215,7 @@ public class PictureHandle {
         List<Mat> ret = new ArrayList<>();
         List<Mat> ycutpoint = cutImginmode(origin,HPRO);
         for(int i = 0; i < ycutpoint.size(); ++i){
-            Bitmap temp = Bitmap.createBitmap(ycutpoint.get(i).cols(),ycutpoint.get(i).rows(),Bitmap.Config.ARGB_8888);
+            Bitmap temp = Bitmap.createBitmap(ycutpoint.get(i).cols(),ycutpoint.get(i).rows(),Bitmap.Config.RGB_565);
             Utils.matToBitmap(ycutpoint.get(i),temp);
             List<Mat> ss = cutImgbyseedfill(temp);
             ret.addAll(ss);
@@ -491,12 +496,12 @@ public class PictureHandle {
     }
 
     //角度矫正
-    public static Bitmap ImgRecify(Bitmap bitmap){
+    public static Bitmap ImgRecifyByHL(Bitmap bitmap){
         Mat origin = new Mat();
         Utils.bitmapToMat(bitmap,origin);
         double degree = calcdegree(origin);
         Mat res = rotateImg(origin,degree);
-        Bitmap bitmap1 = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.ARGB_8888);
+        Bitmap bitmap1 = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.RGB_565);
         Utils.matToBitmap(res,bitmap1);
         return bitmap1;
     }
@@ -508,7 +513,7 @@ public class PictureHandle {
         int length = (int) sqrt(origin.cols()*origin.cols()+origin.rows()*origin.rows());
         Mat M = Imgproc.getRotationMatrix2D(center,degree,1);
         Mat ret = new Mat();
-        Imgproc.warpAffine(origin,ret,M, new Size(length,length),1,0, new Scalar(WITHE, WITHE,WITHE,WITHE));
+        Imgproc.warpAffine(origin,ret,M, new Size(length,length),1,0, new Scalar(WITHE, WITHE,WITHE));
         return ret;
     }
 
@@ -522,7 +527,7 @@ public class PictureHandle {
         do{
             threshold -= 50;
             Imgproc.HoughLines(midmat,lines,1, PI/180,threshold);
-        }while(lines.rows() <= 5 && threshold > 0);
+        }while(lines.rows() <= 50 && threshold > 0);
 
         Log.i(TAG,"threshold:" + threshold);
         Log.i(TAG,"linesc: "+lines.cols());
@@ -545,17 +550,170 @@ public class PictureHandle {
             pt1.y = round(y0+5000*a);
             pt2.x = round(x0-5000*(-b));
             pt2.y = round(y0-5000*a);
-            Imgproc.line(gray,pt1,pt2,new Scalar(255,255,255,1),1);
+            Imgproc.line(gray,pt1,pt2,new Scalar(0,0,255),3);
 
             sumangle += theta;
         }
 
         saveImg(filepath+"/pic/line.png",gray);
 
-
         double averageangle = sumangle/lines.rows();
 
+        Log.i(TAG,"angle:" +((averageangle/PI*180)-90));
+
         return (averageangle/PI*180)-90;
+    }
+
+    public static Bitmap ImgRecifyByDFT(Bitmap bitmap){
+        Mat origin = new Mat();
+        Utils.bitmapToMat(bitmap,origin);
+        Mat res = DFT(origin);
+        Bitmap ret = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.RGB_565);
+        Utils.matToBitmap(res,ret);
+        return ret;
+    }
+
+    public static Mat DFT(Mat origin){
+        Mat gray = new Mat();
+        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGB2GRAY);
+        final int nrows = gray.rows();
+        final int ncols = gray.cols();
+
+        int crows = Core.getOptimalDFTSize(nrows);
+        int ccols = Core.getOptimalDFTSize(ncols);
+        Mat mat = new Mat();
+        Core.copyMakeBorder(gray,mat,0,crows-nrows,0,ccols-ncols,Core.BORDER_CONSTANT,new Scalar(WITHE,WITHE,WITHE));
+
+        mat.convertTo(mat,CvType.CV_32F);
+        List<Mat> groupMats = new ArrayList<>();
+        groupMats.add(mat);
+        groupMats.add(Mat.zeros(mat.size(),CvType.CV_32F));
+        Mat mergemat = new Mat();
+        Core.merge(groupMats,mergemat);
+        Core.dft(mergemat,mergemat);
+        Core.split(mergemat,groupMats);
+        Core.magnitude(groupMats.get(0),groupMats.get(1),groupMats.get(0));
+
+        Mat mat1 = groupMats.get(0).clone();
+        Mat mat2 = new Mat(mat1.rows(),mat1.cols(),mat1.type(),new Scalar(1,1,1));
+        System.out.println(mat1);
+        System.out.println("------------------");
+        System.out.println(mat2);
+        Core.add(mat1,mat2,mat1);
+        Core.log(mat1,mat1);
+
+        Core.normalize(mat1,mat1,0,1,Core.NORM_MINMAX);
+        mat1.convertTo(mat1,CvType.CV_8UC1,255,0);
+        int cx = mat1.cols()/2;
+        int cy = mat1.rows()/2;
+
+        Mat temp = new Mat();
+        Mat q0 = new Mat(mat1,new Rect(0,0,cx,cy));
+        Mat q1 = new Mat(mat1,new Rect(cx,0,cx,cy));
+        Mat q2 = new Mat(mat1,new Rect(0,cy,cx,cy));
+        Mat q3 = new Mat(mat1,new Rect(cx,cy,cx,cy));
+
+        q0.copyTo(temp);
+        q3.copyTo(q0);
+        temp.copyTo(q3);
+
+        q1.copyTo(temp);
+        q2.copyTo(q1);
+        temp.copyTo(q2);
+
+        saveImg(filepath+"/pic/magnititude.png",mat1);
+
+        Mat binarymat = new Mat();
+        Imgproc.threshold(mat1,binarymat,155,255,Imgproc.THRESH_BINARY);
+        //Imgproc.adaptiveThreshold(mat1, binarymat, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 4.5D);
+        binarymat.convertTo(binarymat,CvType.CV_8UC1,255,0);
+        Mat lines = new Mat();
+        saveImg(filepath+"/pic/binary.png",binarymat);
+        Imgproc.HoughLines(binarymat,lines,1,PI/180,50);
+
+        Mat houghmat = new Mat(binarymat.size(),CvType.CV_8UC1);
+
+        saveImg(filepath+"/pic/line0.png",houghmat);
+
+        double[] data;
+        Log.i(TAG,"linesr: "+lines.rows());
+        for(int i = 0; i < lines.rows(); ++i){
+            data = lines.get(i,0);
+            double rho = data[0], theta = data[1];
+            double a = cos(theta), b = sin(theta);
+            double x0 = a*rho, y0 = b*rho;
+            Point pt1 = new Point();
+            Point pt2 = new Point();
+            pt1.x = round(x0+1000*(-b));
+            pt1.y = round(y0+1000*a);
+            pt2.x = round(x0-1000*(-b));
+            pt2.y = round(y0-1000*a);
+            Imgproc.line(houghmat,pt1,pt2,new Scalar(255,0,0),1);
+        }
+        saveImg(filepath+"/pic/line1.png",houghmat);
+
+        double theta = 0;
+        int cnt = 0;
+        for(int i = 0; i < lines.rows(); ++i){
+            double tmp = lines.get(i,0)[1]*180/PI;
+            theta += tmp;
+            cnt++;
+        }
+        theta = theta/(cnt == 0 ? 1 : cnt);
+
+        double angleT = nrows*tan(theta/180*PI)/ncols;
+        theta = atan(angleT)*180/PI;
+        if(theta < 0)
+            theta += 90;
+        else
+            theta -= 90;
+
+        Point center = new Point(ncols/2,nrows/2);
+        Mat warpmat = Imgproc.getRotationMatrix2D(center,theta,1);
+        Mat ret = new Mat(origin.size(),origin.type());
+        Imgproc.warpAffine(origin,ret,warpmat,ret.size(),1,0,new Scalar(WITHE,WITHE,WITHE));
+        return ret;
+    }
+
+
+    //doesn't work
+    public static Bitmap ImgRecifyByOB(Bitmap bitmap){
+        Mat origin = new Mat();
+        Utils.bitmapToMat(bitmap,origin);
+        Mat gray = new Mat();
+        Imgproc.cvtColor(origin,gray,Imgproc.COLOR_RGB2GRAY);
+        Mat out = new Mat();
+        Imgproc.adaptiveThreshold(gray, out, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 4.5D);
+        List<MatOfPoint> counters = new ArrayList<>();
+        Imgproc.findContours(out,counters,new Mat(),Imgproc.RETR_EXTERNAL,Imgproc.CHAIN_APPROX_NONE);
+
+        Log.i(TAG,"counters: "+counters.size());
+
+        double area = Imgproc.boundingRect(counters.get(0)).area();
+        int index = 0;
+        for(int i = 1; i < counters.size(); ++i){
+            if(Imgproc.boundingRect(counters.get(i)).area() > area){
+                area = Imgproc.boundingRect(counters.get(i)).area();
+                index = i;
+            }
+        }
+
+        MatOfPoint2f nPoint = new MatOfPoint2f(counters.get(index).toArray());
+        RotatedRect rect = Imgproc.minAreaRect(nPoint);
+        Point[] rectPoint = new Point[4];
+        rect.points(rectPoint);
+        double angle = rect.angle;
+        angle += 90;
+
+        Point center = rect.center;
+        Mat  res = new Mat();
+        origin.copyTo(res);
+        Mat m = Imgproc.getRotationMatrix2D(center,angle,1);
+        Imgproc.warpAffine(res,res,m,res.size(),1,0,new Scalar(WITHE,WITHE,WITHE));
+
+        Bitmap ret = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.RGB_565);
+        Utils.matToBitmap(res,ret);
+        return ret;
     }
 
 }
