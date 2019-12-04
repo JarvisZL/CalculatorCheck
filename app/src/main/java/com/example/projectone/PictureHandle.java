@@ -62,13 +62,13 @@ public class PictureHandle {
 
     public static Bitmap BinarizationWithDenoising_Opencv(Bitmap bitmap,int d){
         Log.i(TAG,"begin to binarizaiton");
-        Bitmap result = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.RGB_565);
+        Bitmap result = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
         Mat origin = new Mat();
         Mat gray = new Mat();
         Mat bf = new Mat();
         Mat out = new Mat();
         Utils.bitmapToMat(bitmap, origin);
-        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGBA2GRAY);
         Log.i(TAG,"After cvtColor");
 
         Imgproc.bilateralFilter(gray, bf, d, (double) (d * 2), (double) (d / 2));
@@ -86,7 +86,7 @@ public class PictureHandle {
 
 
     public static Bitmap resize_28_Opencv(Bitmap bitmap) {
-        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.RGB_565);
+        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.ARGB_8888);
         Mat origin = new Mat();
         Mat out  = new Mat();
         Size size = new Size(SWidth,SHeight);
@@ -94,7 +94,7 @@ public class PictureHandle {
         //先扩充成正方形
         Mat smat = new Mat();
         int width = origin.cols(),height = origin.rows();
-        Scalar value = new Scalar(WITHE,WITHE,WITHE);//4通道
+        Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);
         //计算填充后的大小
         int Flength = (int)(max(width,height)*1.2);
         Core.copyMakeBorder(origin,smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
@@ -113,7 +113,7 @@ public class PictureHandle {
             if(width < 50 && height < 50) continue;
             Mat smat = new Mat();
             int Flength = (int)(max(width,height)*1.2);
-            Scalar value = new Scalar(WITHE,WITHE,WITHE);
+            Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);
             Core.copyMakeBorder(matList.get(i),smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
             saveImg(filepath+"/afterseg/expand"+i+".png",smat);
             smat.release();
@@ -121,7 +121,7 @@ public class PictureHandle {
     }
 
     public static Bitmap resize_28_Opencv_withoutfill(Bitmap bitmap) {
-        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.RGB_565);
+        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.ARGB_8888);
         Mat origin = new Mat();
         Mat out  = new Mat();
         Size size = new Size(SWidth,SHeight);
@@ -141,7 +141,7 @@ public class PictureHandle {
         else{
             int newH = min(CHeight,bitmap.getHeight());
             int newW = min(CWidth,bitmap.getWidth());
-            Bitmap res = Bitmap.createBitmap(newW,newH,Bitmap.Config.RGB_565);
+            Bitmap res = Bitmap.createBitmap(newW,newH,Bitmap.Config.ARGB_8888);
             Mat origin = new Mat();
             int x_start,y_start;
             x_start = bitmap.getWidth()/2-newW/2;
@@ -156,16 +156,16 @@ public class PictureHandle {
 
     //腐蚀和膨胀
     public static Bitmap erodeAnddialte_Opencv(Bitmap bitmap){
-        Bitmap res = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(),Bitmap.Config.RGB_565);
+        Bitmap res = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(),Bitmap.Config.ARGB_8888);
         Mat origin = new Mat();
         Mat out = new Mat();
-        Mat structImg = Imgproc.getStructuringElement(Imgproc.MORPH_RECT,new Size(5,2));
+        Mat structImg = Imgproc.getStructuringElement(Imgproc.MORPH_RECT,new Size(3,3));
         Utils.bitmapToMat(bitmap,origin);
-        //腐蚀
-        Imgproc.erode(origin,out,structImg,new Point(-1,-1),2);
+        //开运算
+        Imgproc.morphologyEx(origin,out,Imgproc.MORPH_CLOSE,structImg);
         origin = out;
-        //膨胀
-        Imgproc.dilate(origin,out,structImg,new Point(-1,-1),2);
+        //闭运算
+        Imgproc.morphologyEx(origin,out,Imgproc.MORPH_OPEN,structImg);
         Utils.matToBitmap(out,res);
         return res;
     }
@@ -215,7 +215,7 @@ public class PictureHandle {
         List<Mat> ret = new ArrayList<>();
         List<Mat> ycutpoint = cutImginmode(origin,HPRO);
         for(int i = 0; i < ycutpoint.size(); ++i){
-            Bitmap temp = Bitmap.createBitmap(ycutpoint.get(i).cols(),ycutpoint.get(i).rows(),Bitmap.Config.RGB_565);
+            Bitmap temp = Bitmap.createBitmap(ycutpoint.get(i).cols(),ycutpoint.get(i).rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(ycutpoint.get(i),temp);
             List<Mat> ss = cutImgbyseedfill(temp);
             ret.addAll(ss);
@@ -501,7 +501,7 @@ public class PictureHandle {
         Utils.bitmapToMat(bitmap,origin);
         double degree = calcdegree(origin);
         Mat res = rotateImg(origin,degree);
-        Bitmap bitmap1 = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.RGB_565);
+        Bitmap bitmap1 = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(res,bitmap1);
         return bitmap1;
     }
@@ -513,7 +513,7 @@ public class PictureHandle {
         int length = (int) sqrt(origin.cols()*origin.cols()+origin.rows()*origin.rows());
         Mat M = Imgproc.getRotationMatrix2D(center,degree,1);
         Mat ret = new Mat();
-        Imgproc.warpAffine(origin,ret,M, new Size(length,length),1,0, new Scalar(WITHE, WITHE,WITHE));
+        Imgproc.warpAffine(origin,ret,M, new Size(length,length),1,0, new Scalar(WITHE, WITHE,WITHE,WITHE));
         return ret;
     }
 
@@ -568,21 +568,21 @@ public class PictureHandle {
         Mat origin = new Mat();
         Utils.bitmapToMat(bitmap,origin);
         Mat res = DFT(origin);
-        Bitmap ret = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.RGB_565);
+        Bitmap ret = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(res,ret);
         return ret;
     }
 
     public static Mat DFT(Mat origin){
         Mat gray = new Mat();
-        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.cvtColor(origin, gray, Imgproc.COLOR_RGBA2GRAY);
         final int nrows = gray.rows();
         final int ncols = gray.cols();
 
         int crows = Core.getOptimalDFTSize(nrows);
         int ccols = Core.getOptimalDFTSize(ncols);
         Mat mat = new Mat();
-        Core.copyMakeBorder(gray,mat,0,crows-nrows,0,ccols-ncols,Core.BORDER_CONSTANT,new Scalar(WITHE,WITHE,WITHE));
+        Core.copyMakeBorder(gray,mat,0,crows-nrows,0,ccols-ncols,Core.BORDER_CONSTANT,new Scalar(WITHE,WITHE,WITHE,WITHE));
 
         mat.convertTo(mat,CvType.CV_32F);
         List<Mat> groupMats = new ArrayList<>();
@@ -671,7 +671,7 @@ public class PictureHandle {
         Point center = new Point(ncols/2,nrows/2);
         Mat warpmat = Imgproc.getRotationMatrix2D(center,theta,1);
         Mat ret = new Mat(origin.size(),origin.type());
-        Imgproc.warpAffine(origin,ret,warpmat,ret.size(),1,0,new Scalar(WITHE,WITHE,WITHE));
+        Imgproc.warpAffine(origin,ret,warpmat,ret.size(),1,0,new Scalar(WITHE,WITHE,WITHE,WITHE));
         return ret;
     }
 
@@ -681,7 +681,7 @@ public class PictureHandle {
         Mat origin = new Mat();
         Utils.bitmapToMat(bitmap,origin);
         Mat gray = new Mat();
-        Imgproc.cvtColor(origin,gray,Imgproc.COLOR_RGB2GRAY);
+        Imgproc.cvtColor(origin,gray,Imgproc.COLOR_RGBA2GRAY);
         Mat out = new Mat();
         Imgproc.adaptiveThreshold(gray, out, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 4.5D);
         List<MatOfPoint> counters = new ArrayList<>();
@@ -709,9 +709,9 @@ public class PictureHandle {
         Mat  res = new Mat();
         origin.copyTo(res);
         Mat m = Imgproc.getRotationMatrix2D(center,angle,1);
-        Imgproc.warpAffine(res,res,m,res.size(),1,0,new Scalar(WITHE,WITHE,WITHE));
+        Imgproc.warpAffine(res,res,m,res.size(),1,0,new Scalar(WITHE,WITHE,WITHE,WITHE));
 
-        Bitmap ret = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.RGB_565);
+        Bitmap ret = Bitmap.createBitmap(res.cols(),res.rows(),Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(res,ret);
         return ret;
     }

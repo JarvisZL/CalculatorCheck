@@ -83,6 +83,7 @@ public class PictureShow extends AppCompatActivity {
         imageView29 = findViewById(R.id.temp29);
         imageView30 = findViewById(R.id.temp30);
         textView = findViewById(R.id.result);
+
         Uri imguri = (Uri) getIntent().getExtras().get(EXTRA_PHOTO);
 
         //from Uri to Bitmap
@@ -92,6 +93,9 @@ public class PictureShow extends AppCompatActivity {
             e.printStackTrace();
             Log.i(TAG,"from uri to bitmap failed");
         }
+
+        Mat tmp = new Mat();
+        Utils.bitmapToMat(bitmap,tmp);
 
 
         //binary
@@ -103,7 +107,7 @@ public class PictureShow extends AppCompatActivity {
         }
 
         //correctAngle
-        bitmap = PictureHandle.ImgRecifyByHL(bitmap);
+       //bitmap = PictureHandle.ImgRecifyByDFT(bitmap);
 
 
         //erode and bilate
@@ -137,7 +141,7 @@ public class PictureShow extends AppCompatActivity {
             if(imgs.get(i).cols() < 40 && imgs.get(i).rows() < 40) continue;
             Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(i).cols(),imgs.get(i).rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(imgs.get(i),bitmap1);
-            bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1);
+         //   bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1);
             bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
             Mat mat = new Mat();
             Utils.bitmapToMat(bitmap1,mat);
@@ -274,7 +278,7 @@ public class PictureShow extends AppCompatActivity {
             }
         }
 */
-        textView.setText("The digits are "+ans);
+        textView.setText("The characters are "+ans);
     }
 
 
@@ -298,7 +302,7 @@ public class PictureShow extends AppCompatActivity {
             return null;
         }
         else{
-            String ret = String.valueOf(result.getNumber());
+            String ret = result.getNumber();
             return ret;
         }
 

@@ -29,8 +29,7 @@ android {
     }
     sourceSets {
         main {
-            jni.srcDirs = ['src/main/jni', 'src/main/jni/']
-            jniLibs.srcDirs = ['libs']
+            jniLibs.srcDirs = ['C:\\Jetbrains\\AS\\Opencv\\OpenCV-android-sdk\\sdk\\native\\libs']
         }
     }
     aaptOptions {

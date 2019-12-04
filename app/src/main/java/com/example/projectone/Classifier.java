@@ -19,13 +19,13 @@ import java.util.Arrays;
 class Classifier {
     private static final String LOG_TAG = "JARVIS in Classifier";
 
-    private static final String MODEL_NAME = "mnist_cnn.tflite";
+    private static final String MODEL_NAME = "char74k_cnn.tflite";
 
     private static final int BATCH_SIZE = 1;
     private static final int IMG_HEIGHT = 28;
     private static final int IMG_WIDTH = 28;
     private static final int NUM_CHANNEL = 1;
-    private static final int NUM_CLASSES = 10;
+    private static final int NUM_CLASSES = 36;
 
     private final Interpreter mInterpreter;
     private final ByteBuffer mImageData;

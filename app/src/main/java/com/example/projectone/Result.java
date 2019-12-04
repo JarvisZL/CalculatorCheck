@@ -12,8 +12,14 @@ public class Result {
         mTimeCost = timeCost;
     }
 
-    public int getNumber() {
-        return mNumber;
+    public String getNumber() {
+        if(mNumber < 10)
+            return String.valueOf(mNumber);
+        else if(mNumber <= 36){
+            return String.valueOf((char)(mNumber-10+65));
+        }
+        else
+            return null;
     }
 
     public float getProbability() {
