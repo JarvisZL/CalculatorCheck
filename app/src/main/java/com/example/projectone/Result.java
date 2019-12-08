@@ -15,11 +15,11 @@ public class Result {
     public String getNumber() {
         if(mNumber < 10)
             return String.valueOf(mNumber);
-        else if(mNumber <= 36){
+        else if(mNumber < 36){
             return String.valueOf((char)(mNumber-10+65));
         }
         else
-            return null;
+            return String.valueOf((char)(mNumber-36+97));
     }
 
     public float getProbability() {

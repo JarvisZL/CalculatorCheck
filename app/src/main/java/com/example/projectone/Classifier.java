@@ -19,7 +19,7 @@ import java.util.Arrays;
 class Classifier {
     private static final String LOG_TAG = "JARVIS in Classifier";
 
-    private static final String MODEL_NAME = "char74k_cnn.tflite";
+    private static final String MODEL_NAME = "exchar74k_cnn.tflite";
 
     private static final int BATCH_SIZE = 1;
     private static final int IMG_HEIGHT = 28;

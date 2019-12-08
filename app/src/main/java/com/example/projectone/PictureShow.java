@@ -34,6 +34,7 @@ public class PictureShow extends AppCompatActivity {
     Bitmap bitmap;
     private List<Mat> imgs;
     private String ans;
+    private int savecnt;
 
     private Classifier mclassifier;
     private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
@@ -50,6 +51,7 @@ public class PictureShow extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_picture_show);
 
+        savecnt = 0;
         ans = null;
         imageView = findViewById(R.id.afterbinary);
         imageView1 = findViewById(R.id.temp1);
@@ -97,7 +99,6 @@ public class PictureShow extends AppCompatActivity {
         Mat tmp = new Mat();
         Utils.bitmapToMat(bitmap,tmp);
 
-
         //binary
         try {
             bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,10);
@@ -107,20 +108,9 @@ public class PictureShow extends AppCompatActivity {
         }
 
         //correctAngle
-       //bitmap = PictureHandle.ImgRecifyByDFT(bitmap);
+        //bitmap = PictureHandle.ImgRecifyByDFT(bitmap);
 
-
-        //erode and bilate
-        /*
-        try {
-            bitmap = PictureHandle.erodeAnddialte_Opencv(bitmap);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i(TAG,"opencv handle erode and dilate failed");
-        }
-         */
         imageView.setImageBitmap(bitmap);
-
 
         //Cutimg
         try {
@@ -130,10 +120,7 @@ public class PictureShow extends AppCompatActivity {
             Log.i(TAG,"Cut failed");
         }
 
-
-
-        //without save
-
+        //resize and recognize
         tensorflowinit();
         int judge = 0;
         int cnt = 0;
@@ -141,8 +128,12 @@ public class PictureShow extends AppCompatActivity {
             if(imgs.get(i).cols() < 40 && imgs.get(i).rows() < 40) continue;
             Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(i).cols(),imgs.get(i).rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(imgs.get(i),bitmap1);
-         //   bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1);
+            //闭运算：消除内部杂点
+            bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1,0);
             bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
+            //膨胀: 填充中间空白
+            bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1,3);
+            PictureHandle.savebitmap(filepath+"expand"+(savecnt++)+".png",bitmap1);
             Mat mat = new Mat();
             Utils.bitmapToMat(bitmap1,mat);
 
@@ -216,7 +207,6 @@ public class PictureShow extends AppCompatActivity {
             }
 
             cnt++;
-
             String res = tensorflowrun(bitmap1);
             if(res!=null){
                 if(ans == null){
@@ -227,7 +217,6 @@ public class PictureShow extends AppCompatActivity {
                 }
             }
         }
-
 
 
         //clip
@@ -243,41 +232,6 @@ public class PictureShow extends AppCompatActivity {
 
          */
 
-
-        //Save img and rec
-        /*
-        tensorflowinit();
-        try{
-            PictureHandle.fillandsave(imgs);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i(TAG,"opencv handle fillandsave failed.");
-        }
-
-        //get and resize
-        for(int i = 0 ; i<imgs.size(); ++i){
-            if(imgs.get(i).rows() < 50 && imgs.get(i).cols() < 50) continue;
-            Mat mat = Imgcodecs.imread(filepath+"expand"+i+".jpg");
-            Bitmap bitmap1 = Bitmap.createBitmap(mat.cols(),mat.rows(),Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(mat,bitmap1);
-            bitmap1 = PictureHandle.resize_28_Opencv_withoutfill(bitmap1);
-            //debug
-            if(i == 0) imageView2.setImageBitmap(bitmap1);
-            if(i == 1) imageView3.setImageBitmap(bitmap1);
-            if(i == 2) imageView4.setImageBitmap(bitmap1);
-
-            String res = tensorflowrun(bitmap1);
-            if(res!=null){
-                if(ans == null){
-                    ans = res;
-                    ans += " ";
-                }else{
-                    ans += res;
-                    ans += " ";
-                }
-            }
-        }
-*/
         textView.setText("The characters are "+ans);
     }
 
@@ -293,18 +247,12 @@ public class PictureShow extends AppCompatActivity {
 
     private String  tensorflowrun(Bitmap bitmap){
         if(mclassifier == null){
-            Log.i(TAG,"classifier is null");
+            throw new AssertionError("classifier is null");
         }
         Result result = mclassifier.classify(bitmap);
         float prob = result.getProbability();
         Log.i(TAG,"prob : "+prob);
-        if(prob < 0.1){
-            return null;
-        }
-        else{
-            String ret = result.getNumber();
-            return ret;
-        }
-
+        return result.getNumber();
     }
+
 }
