@@ -12,16 +12,25 @@ public class Result {
         mTimeCost = timeCost;
     }
 
-    public String getNumber() {
+
+    public String getchar(){
         if(mNumber < 10)
             return String.valueOf(mNumber);
-        else if(mNumber < 36){
-            return String.valueOf((char)(mNumber-10+65));
-        }
+        else if(mNumber == 10)
+            return String.valueOf('+');
+        else if(mNumber == 11)
+            return String.valueOf('-');
+        else if(mNumber == 12)
+            return String.valueOf('*');
+        else if(mNumber == 13)
+            return String.valueOf('/');
+        else if(mNumber == 14)
+            return String.valueOf('=');
         else
-            return String.valueOf((char)(mNumber-36+97));
+            return null;
     }
 
+    public int getmNumber() { return mNumber; }
     public float getProbability() {
         return mProbability;
     }

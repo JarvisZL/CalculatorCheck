@@ -101,20 +101,22 @@ public class PictureShow extends AppCompatActivity {
 
         //binary
         try {
-            bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,10);
+            bitmap = PictureHandle.BinarizationWithDenoising_Opencv(bitmap,8);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"opencv handle binarization failed");
         }
 
+
         //correctAngle
         //bitmap = PictureHandle.ImgRecifyByDFT(bitmap);
+        PictureHandle.savebitmap(filepath+"binary.png",bitmap);
 
         imageView.setImageBitmap(bitmap);
 
         //Cutimg
         try {
-            imgs = PictureHandle.cutImg(bitmap);
+            imgs = PictureHandle.cutImgbyprojection(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i(TAG,"Cut failed");
@@ -125,14 +127,14 @@ public class PictureShow extends AppCompatActivity {
         int judge = 0;
         int cnt = 0;
         for(int i = 0; i < imgs.size(); ++i){
-            if(imgs.get(i).cols() < 40 && imgs.get(i).rows() < 40) continue;
+            if(imgs.get(i).cols() < 15 && imgs.get(i).rows() < 15 ) continue;
             Bitmap bitmap1 = Bitmap.createBitmap(imgs.get(i).cols(),imgs.get(i).rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(imgs.get(i),bitmap1);
             //闭运算：消除内部杂点
-            bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1,0);
+            //bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1,0);
             bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
             //膨胀: 填充中间空白
-            bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1,3);
+            //bitmap1 = PictureHandle.erodeAnddialte_Opencv(bitmap1,3);
             PictureHandle.savebitmap(filepath+"expand"+(savecnt++)+".png",bitmap1);
             Mat mat = new Mat();
             Utils.bitmapToMat(bitmap1,mat);
@@ -251,8 +253,8 @@ public class PictureShow extends AppCompatActivity {
         }
         Result result = mclassifier.classify(bitmap);
         float prob = result.getProbability();
-        Log.i(TAG,"prob : "+prob);
-        return result.getNumber();
+        Log.i(TAG,"prob : "+prob+" mnum: "+String.valueOf(result.getmNumber()));
+        return result.getchar();
     }
 
 }

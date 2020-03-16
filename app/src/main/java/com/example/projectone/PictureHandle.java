@@ -38,7 +38,7 @@ import static java.lang.Math.tan;
 
 public class PictureHandle {
     private static final int min_tresh = 2; //波峰最小幅度
-    private static final int min_range = 10;//波峰最小间隔
+    private static final int min_range = 5;//波峰最小间隔
 
     private static final int VPRO = 0;//segmode
     private static final int HPRO = 1;
@@ -72,7 +72,7 @@ public class PictureHandle {
         Log.i(TAG,"After denoising");
         Imgproc.adaptiveThreshold(bf, out, 255.0D, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 9, 2.5D);
         Log.i(TAG,"After adaptiveThreshold");
-      //  Imgproc.Canny(bf,out,100,200);
+
         Utils.matToBitmap(out, result);
         origin.release();
         gray.release();
@@ -92,7 +92,7 @@ public class PictureHandle {
         int width = origin.cols(),height = origin.rows();
         Scalar value = new Scalar(WITHE,WITHE,WITHE,WITHE);
         //计算填充后的大小
-        int Flength = (int)(max(width,height)*1.2);
+        int Flength = (int)(max(width,height)*2);
         Core.copyMakeBorder(origin,smat,(Flength-height)/2,(Flength-height)/2,(Flength-width)/2,(Flength-width)/2, Core.BORDER_CONSTANT,value);
         //saveImg(filepath+"/afterseg/expand"+(cnt++)+".png",smat);
         //缩放
@@ -142,7 +142,7 @@ public class PictureHandle {
         Bitmap res = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(),Bitmap.Config.ARGB_8888);
         Mat origin = new Mat();
         Mat out = new Mat();
-        Mat structImg = Imgproc.getStructuringElement(Imgproc.MARKER_CROSS,new Size(3,3));
+        Mat structImg = Imgproc.getStructuringElement(Imgproc.MARKER_CROSS,new Size(2,2));
         Utils.bitmapToMat(bitmap,origin);
         switch (type){
             case 0:
@@ -235,19 +235,38 @@ public class PictureHandle {
        List<Mat> ret = new ArrayList<>();
        List<Mat> ycutpoint = cutImginmode(origin,HPRO);//得到了每一行图片的矩阵。
        for(int i = 0; i < ycutpoint.size(); ++i){
-          // saveImg(filepath+"/afterseg/line"+i+".png",ycutpoint.get(i));
+           //saveImg(filepath+"/afterseg/line"+i+".png",ycutpoint.get(i));
            List<Mat> xcutpoint = cutImginmode(ycutpoint.get(i), VPRO);
           for(int j = 0; j < xcutpoint.size(); ++j){
-               List<Mat> finalcutpoint = cutImginmode(xcutpoint.get(j),HPRO);
-               for(int k = 0; k < finalcutpoint.size(); ++k){//always only once
-                   saveImg(filepath+"/afterseg/img("+i+","+j+").png",finalcutpoint.get(k));
-                   ret.add(finalcutpoint.get(k));
-               }
+              Mat tmp = RemoveWS_Vertical(xcutpoint.get(j));
+              saveImg(filepath+"/afterseg/cut"+i+"_"+j+".png",tmp);
+              ret.add(tmp);
+//               List<Mat> finalcutpoint = cutImginmode(xcutpoint.get(j),HPRO);
+//               for(int k = 0; k < finalcutpoint.size(); ++k){//always only once
+//                   saveImg(filepath+"/afterseg/img("+i+","+j+").png",finalcutpoint.get(k));
+//                   ret.add(finalcutpoint.get(k));
+//               }
           }
        }
        origin.release();
        return ret;
     }
+
+    public static Mat RemoveWS_Vertical(Mat origin){
+        int nWidth = origin.cols(), nHeight = origin.rows() ;
+        int up = nHeight - 1, bottom = 0;
+        for (int i = 0; i < nHeight; ++i){
+            for (int j = 0; j < nWidth; ++j){
+                if (((int)origin.get(i,j)[0]) == BLACK) {
+                    up = Math.min(i,up);
+                    bottom = Math.max(i,bottom);
+                }
+            }
+        }
+        Mat ret = new Mat(origin,new Rect(0,up,nWidth,bottom - up));
+        return ret;
+    }
+
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public static List<Mat> cutImginmode(Mat origin,int mode){
@@ -275,7 +294,7 @@ public class PictureHandle {
                     end = i;
                     if(end - begin >= min_range){//find a row
                          int height = end - begin;
-                         System.out.println("begin:"+begin+" end:"+end);
+//                         System.out.println("begin:"+begin+" end:"+end);
                          Mat temp = new Mat(origin,new Rect(0,begin,nWidth,height));
                          Mat t = new Mat();
                          temp.copyTo(t);
