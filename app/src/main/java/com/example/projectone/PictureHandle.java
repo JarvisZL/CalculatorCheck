@@ -524,8 +524,6 @@ public class PictureHandle {
 
 
 
-
-
 }
 
 class BOCD{
