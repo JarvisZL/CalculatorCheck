@@ -1,5 +1,4 @@
 include ':app'
 rootProject.name='ProjectOne'
 include ':OpenCV'
-include ':OpenCV'
-include ':openCVLibrary347'
+include ':openCVLibrary340'
