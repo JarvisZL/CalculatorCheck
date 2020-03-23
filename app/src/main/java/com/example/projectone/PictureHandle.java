@@ -38,7 +38,8 @@ import static java.lang.Math.tan;
 
 public class PictureHandle {
     private static final int min_tresh = 2; //波峰最小幅度
-    private static final int min_range = 5;//波峰最小间隔
+    private static final int min_range = 10;//波峰最小间隔
+    private static int min_wscnt = 110;
 
     private static final int VPRO = 0;//segmode
     private static final int HPRO = 1;
@@ -208,7 +209,6 @@ public class PictureHandle {
             }
             saveImg(filepath+"/pic/col"+(dcntcol++)+".png",project);
         }
-
     }
 
     //水平投影切割后连通域切割
@@ -217,7 +217,7 @@ public class PictureHandle {
         Mat origin = new Mat();
         Utils.bitmapToMat(bitmap,origin);
         List<Mat> ret = new ArrayList<>();
-        List<Mat> ycutpoint = cutImginmode(origin,HPRO);
+        List<Mat> ycutpoint = cutImginmode(origin,HPRO,"characters");
         for(int i = 0; i < ycutpoint.size(); ++i){
             Bitmap temp = Bitmap.createBitmap(ycutpoint.get(i).cols(),ycutpoint.get(i).rows(),Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(ycutpoint.get(i),temp);
@@ -229,14 +229,14 @@ public class PictureHandle {
 
     //投影切割
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public static List<Mat> cutImgbyprojection(Bitmap bitmap){
+    public static List<Mat> cutImgbyprojection(Bitmap bitmap,String granularity){
        Mat origin = new Mat();
        Utils.bitmapToMat(bitmap,origin);
        List<Mat> ret = new ArrayList<>();
-       List<Mat> ycutpoint = cutImginmode(origin,HPRO);//得到了每一行图片的矩阵。
+       List<Mat> ycutpoint = cutImginmode(origin,HPRO, granularity);//得到了每一行图片的矩阵。
        for(int i = 0; i < ycutpoint.size(); ++i){
            //saveImg(filepath+"/afterseg/line"+i+".png",ycutpoint.get(i));
-           List<Mat> xcutpoint = cutImginmode(ycutpoint.get(i), VPRO);
+           List<Mat> xcutpoint = cutImginmode(ycutpoint.get(i), VPRO, granularity);
           for(int j = 0; j < xcutpoint.size(); ++j){
               Mat tmp = RemoveWS_Vertical(xcutpoint.get(j));
               saveImg(filepath+"/afterseg/cut"+i+"_"+j+".png",tmp);
@@ -269,7 +269,7 @@ public class PictureHandle {
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public static List<Mat> cutImginmode(Mat origin,int mode){
+    public static List<Mat> cutImginmode(Mat origin,int mode,String granularity){
         if(mode == HPRO){
             int nWidth = origin.cols(), nHeight = origin.rows();
             int[] xNum = new int[nHeight];
@@ -290,11 +290,11 @@ public class PictureHandle {
                 if(xNum[i] > min_tresh && begin == -1){
                     begin = i;
                 }
-                else if((xNum[i] < min_tresh && begin != -1)||(i == xNum.length-1 && begin != -1 && end == 0)){
+                else if((xNum[i] < min_tresh && begin != -1)||(i == xNum.length-1 && begin != -1)){
                     end = i;
+                    // 粒度大小无影响
                     if(end - begin >= min_range){//find a row
                          int height = end - begin;
-//                         System.out.println("begin:"+begin+" end:"+end);
                          Mat temp = new Mat(origin,new Rect(0,begin,nWidth,height));
                          Mat t = new Mat();
                          temp.copyTo(t);
@@ -311,7 +311,6 @@ public class PictureHandle {
                     continue;
                 }
             }
-          //  System.out.println("fbegin: "+begin+" fend: "+end);
             return YMat;
         }
         else if(mode == VPRO){
@@ -329,32 +328,88 @@ public class PictureHandle {
             Drawprojection(yNum,mode);
             //分割
             List<Mat> XMat = new ArrayList<>();
-            int begin =-1,end = 0;
-            for(int i = 0; i < yNum.length; ++i){
-                if(yNum[i] > min_tresh && begin == -1){
-                    begin = i;
+
+            if(granularity.equals("characters")){
+                int begin =-1,end = 0;
+                for(int i = 0; i < yNum.length; ++i){
+                    if(yNum[i] > min_tresh && begin == -1){
+                        begin = i;
+                    }
+                    else if((yNum[i] < min_tresh && begin != -1)||(i == yNum.length-1 && begin != -1)){
+                        end = i;
+                        if(end - begin >= min_range){//find a column
+                            int width = end - begin;
+                            Mat temp = new Mat(origin,new Rect(begin,0,width,nHeight));
+                            Mat t = new Mat();
+                            temp.copyTo(t);
+                            XMat.add(t);
+                        }
+                        begin=-1;
+                        end = 0;
+                    }
+                    else if(yNum[i] > min_tresh && begin != -1){
+                        continue;
+                    }
+                    else if(yNum[i] < min_tresh || begin == -1) {
+                        continue;
+                    }
                 }
-                else if((yNum[i] < min_tresh && begin != -1)||(i == yNum.length-1 && begin != -1 && end == 0)){
-                    end = i;
-                    if(end - begin >= min_range){//find a column
+                return XMat;
+            }
+            else if(granularity.equals("pieces")){
+                int begin =-1,end = 0;
+                int wscnt = 0;
+                int curspcnt = 0, oldspcnt = 0;
+                for(int i = 0; i < yNum.length; ++i){
+                    if(yNum[i] > min_tresh && begin == -1){
+                        begin = i;
+                        wscnt = 0;
+                        oldspcnt = curspcnt = 0;
+                    }
+                    else if(i == yNum.length-1 && begin != -1){//need before <min_tresh
+                        end = i;
                         int width = end - begin;
-                        System.out.println("begin:"+begin+" end:"+end);
                         Mat temp = new Mat(origin,new Rect(begin,0,width,nHeight));
                         Mat t = new Mat();
                         temp.copyTo(t);
                         XMat.add(t);
+                        begin=-1;
+                        end = 0;
                     }
-                    begin=-1;
-                    end = 0;
+                    else if(yNum[i] < min_tresh && begin != -1){
+                        end = i;
+                        if(wscnt > min_wscnt){//find a column //curspcnt - oldspcnt > 110
+                            int width = end - begin;
+                            Mat temp = new Mat(origin,new Rect(begin,0,width,nHeight));
+                            Mat t = new Mat();
+                            temp.copyTo(t);
+                            XMat.add(t);
+                            begin=-1;
+                            end = 0;
+                        }
+                        else{
+                            end = 0;
+                            wscnt++;
+                            curspcnt++;
+                        }
+
+                    }
+                    else if(yNum[i] > min_tresh && begin != -1){
+                        wscnt = 0;
+                        if(curspcnt > 0){
+                            oldspcnt = curspcnt;
+                            curspcnt = 0;
+                        }
+                    }
+                    else if(yNum[i] < min_tresh || begin == -1) {
+                        wscnt = 0;
+                    }
                 }
-                else if(yNum[i] > min_tresh && begin != -1){
-                    continue;
-                }
-                else if(yNum[i] < min_tresh || begin == -1) {
-                    continue;
-                }
+                return XMat;
             }
-            return XMat;
+            else{
+                throw new AssertionError("No such a granularity");
+            }
         }
         else
             return null;
@@ -470,6 +525,37 @@ public class PictureHandle {
             int height = bocd.getBottom()-bocd.getTop()+1;
             Mat res = new Mat(origin,new Rect(bocd.getLeft(),bocd.getTop(),width,height));
             ret.add(res);
+        }
+        return ret;
+    }
+
+
+    //分割成一个一个横式
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static List<Mat> cutIntopieces(Bitmap bitmap){
+        Mat origin = new Mat();
+        Utils.bitmapToMat(bitmap,origin);
+        List<Mat> ret = new ArrayList<>();
+        List<Mat> ycutpoint = cutImginmode(origin,HPRO,"pieces");//得到了每一行图片的矩阵。
+        int i = 0;
+        for(Mat each : ycutpoint){
+            List<Mat>  tmp = cutImginmode(each,VPRO,"pieces");
+            for (Mat res: tmp) {
+                ret.add(res);
+            }
+        }
+        return ret;
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static List<Mat> cuteachpieces(Mat origin){
+        List<Mat> ret = new ArrayList<>();
+        List<Mat> mats = cutImginmode(origin,VPRO,"characters");
+        for(int i = 0; i < mats.size(); ++i){
+            Mat tmp = RemoveWS_Vertical(mats.get(i));
+            saveImg(filepath+"/afterseg/cut"+i+".png",tmp);
+            ret.add(tmp);
         }
         return ret;
     }
