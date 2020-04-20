@@ -7,9 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.text.Spannable;
 import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
@@ -32,7 +30,7 @@ import java.util.List;
 
 public class PictureShow extends AppCompatActivity {
 
-    private static final String TAG="JARVIS IN PICSHOW";
+    private static final String TAG="Picture Show";
     public static final String EXTRA_PHOTO = "exphoto";
     private static String datapath;
     ImageView imageView,imageView1,imageView2,imageView3,imageView4,imageView5,imageView6,imageView7,imageView8,imageView9,imageView10;
@@ -46,7 +44,8 @@ public class PictureShow extends AppCompatActivity {
     private String text;
     private int savecnt;
 
-    private Classifier mclassifier;
+    private ClassifierForNormal classifierfornomal;
+    private ClassifierForHnd classifierformnist;
     private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST/afterseg/";
 
     static {
@@ -89,11 +88,12 @@ public class PictureShow extends AppCompatActivity {
 
         //Cut into pieces
         pieces = PictureHandle.cutIntopieces(bitmap);
-        for(int i = 0; i < pieces.size(); ++i){
-            PictureHandle.saveImg(filepath+"piece"+i+".png",pieces.get(i));
-        }
+//        for(int i = 0; i < pieces.size(); ++i){
+//            PictureHandle.saveImg(filepath+"piece"+i+".png",pieces.get(i));
+//        }
 
-        tensorflowinit();
+        ClassfierForHndInit();
+        ClassifierForNomarlInit();
         //Cut each piece
         anss = new ArrayList<>();
         text = "";
@@ -101,29 +101,44 @@ public class PictureShow extends AppCompatActivity {
         for(Mat piece : pieces){
             imgs = PictureHandle.cuteachpieces(piece);
             String line = null;
+            boolean changeflag = false;
             for(Mat img : imgs){
-                if(img.rows() < 20 && img.cols() < 20) continue;
+                if(img.rows() < 15 && img.cols() < 15) continue;
                 Bitmap bitmap1 = Bitmap.createBitmap(img.cols(),img.rows(),Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(img,bitmap1);
-                bitmap1 = PictureHandle.resize_28_Opencv(bitmap1);
+                if(!changeflag)
+                    bitmap1 = PictureHandle.resize_Opencv(bitmap1, 28);
+                else
+                    bitmap1 = PictureHandle.resize_Opencv(bitmap1, 56);
                 PictureHandle.savebitmap(filepath+"expand"+(savecnt++)+".png",bitmap1);
 
-                String res = tensorflowrun(bitmap1);
+                String res;
+                if(!changeflag){
+                    res = Normalrun(bitmap1);
+                }
+                else
+                    res = Hndrun(bitmap1);
+                    //res = Normalrun(bitmap1);
+
                 if(res!=null){
                     if(line == null){
                         line = res;
                     }else{
                         line += res;
                     }
+                    if(res.equals("=")){
+                        changeflag = true;
+                    }
                 }
             }
             //check one line
             if(line == null) continue;
+            Log.w("Line: ",line);
             String status = Calculator.Check(line);
             line = line + " (" + status + ")" + "\n";
             anss.add(new Pair<>(line,status));
             text = text + line;
-        }
+    }
 
         SpannableString spannableString = new SpannableString(text);
         int textindex = 0;
@@ -261,22 +276,42 @@ public class PictureShow extends AppCompatActivity {
     }
 
 
-    private void tensorflowinit(){
+    private void ClassfierForHndInit(){
+        try {
+            classifierformnist = new ClassifierForHnd(PictureShow.this);
+        } catch (IOException e){
+            Toast.makeText(this, R.string.failed_to_create_classifier, Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
+    }
+
+    private void ClassifierForNomarlInit(){
         try{
-            mclassifier = new Classifier(PictureShow.this);
+            classifierfornomal = new ClassifierForNormal(PictureShow.this);
         } catch (IOException e) {
             Toast.makeText(this, R.string.failed_to_create_classifier, Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
     }
 
-    private String  tensorflowrun(Bitmap bitmap){
-        if(mclassifier == null){
-            throw new AssertionError("classifier is null");
+
+    private String Hndrun(Bitmap bitmap){
+        if(classifierformnist == null){
+            throw new AssertionError("classifier for Hnd is null");
         }
-        Result result = mclassifier.classify(bitmap);
+        Result result = classifierformnist.classify(bitmap);
         float prob = result.getProbability();
-        Log.i(TAG,"prob : "+prob+" mnum: "+String.valueOf(result.getmNumber()));
+        Log.i("Mnist prob: ",prob+" mnum: "+result.getmNumber());
+        return result.getchar();
+    }
+
+    private String  Normalrun(Bitmap bitmap){
+        if(classifierfornomal == null){
+            throw new AssertionError("classifier for normal is null");
+        }
+        Result result = classifierfornomal.classify(bitmap);
+        float prob = result.getProbability();
+        Log.i("Normal prob: ",prob+" mnum: "+result.getmNumber());
         return result.getchar();
     }
 

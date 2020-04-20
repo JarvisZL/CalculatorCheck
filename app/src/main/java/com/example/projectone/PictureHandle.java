@@ -3,6 +3,7 @@ package com.example.projectone;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
@@ -38,8 +39,8 @@ import static java.lang.Math.tan;
 
 public class PictureHandle {
     private static final int min_tresh = 2; //波峰最小幅度
-    private static final int min_range = 10;//波峰最小间隔
-    private static int min_wscnt = 110;
+    private static final int min_range = 6;//波峰最小间隔
+    //private static int min_wscnt = 110;
 
     private static final int VPRO = 0;//segmode
     private static final int HPRO = 1;
@@ -53,7 +54,7 @@ public class PictureHandle {
     private static final int SWidth = 28;//standard
     private static final int SHeight = 28;
 
-    private static final String TAG = "JARVIS in handle";
+    private static final String TAG = "Picture Handle";
     private static final String filepath = Environment.getExternalStorageDirectory().getPath()+ "/ZLYTEST";
     private static int dcntrow = 0, dcntcol = 0;
     private static int cnt = 0;
@@ -82,11 +83,11 @@ public class PictureHandle {
         return result;
     }
 
-    public static Bitmap resize_28_Opencv(Bitmap bitmap) {
-        Bitmap res = Bitmap.createBitmap(SWidth,SHeight,Bitmap.Config.ARGB_8888);
+    public static Bitmap resize_Opencv(Bitmap bitmap, int ssize) {
+        Bitmap res = Bitmap.createBitmap(ssize,ssize,Bitmap.Config.ARGB_8888);
         Mat origin = new Mat();
         Mat out  = new Mat();
-        Size size = new Size(SWidth,SHeight);
+        Size size = new Size(ssize, ssize);
         Utils.bitmapToMat(bitmap,origin);
         //先扩充成正方形
         Mat smat = new Mat();
@@ -316,16 +317,20 @@ public class PictureHandle {
         else if(mode == VPRO){
             int nWidth = origin.cols(), nHeight = origin.rows();
             int[] yNum = new int[nWidth];
+            int[] bpNum = new int[nWidth];//统计每一列空白像素个数
             // 统计出每列黑色像素点的个数
             for (int i = 0; i < nWidth; i++) {
                 for (int j = 0; j < nHeight; j++) {
                     if (((int)origin.get(j,i)[0]) == BLACK) {
                         yNum[i]++;
                     }
+                    else
+                        bpNum[i]++;
                 }
             }
             //画图
             Drawprojection(yNum,mode);
+
             //分割
             List<Mat> XMat = new ArrayList<>();
 
@@ -357,6 +362,38 @@ public class PictureHandle {
                 return XMat;
             }
             else if(granularity.equals("pieces")){
+                //计算阈值
+                int total = 0, num = 0,average;
+                int frontindex = 0,backindex = nWidth-1;
+                while(bpNum[frontindex] == nHeight){
+                    frontindex++;
+                    if(frontindex == nWidth)
+                        break;
+                }
+                while(bpNum[backindex] == nHeight){
+                    backindex--;
+                    if(backindex == 0)
+                        break;
+                }
+
+                for(; frontindex <= backindex; ++frontindex){
+                    int cnt = 0;
+                    if(bpNum[frontindex] == nHeight){
+                        num++;
+                    }
+
+                    while(bpNum[frontindex] == nHeight){
+                        cnt++;
+                        frontindex++;
+                        if(frontindex == nWidth)
+                            break;
+                    }
+                    total += cnt;
+                }
+                average = num == 0 ? total : total/num;
+                Log.w("Average is ",String.valueOf(average));
+
+                //分割
                 int begin =-1,end = 0;
                 int wscnt = 0;
                 int curspcnt = 0, oldspcnt = 0;
@@ -368,7 +405,7 @@ public class PictureHandle {
                     }
                     else if(i == yNum.length-1 && begin != -1){//need before <min_tresh
                         end = i;
-                        int width = end - begin;
+                        int width = end - begin - wscnt + 5;
                         Mat temp = new Mat(origin,new Rect(begin,0,width,nHeight));
                         Mat t = new Mat();
                         temp.copyTo(t);
@@ -378,8 +415,8 @@ public class PictureHandle {
                     }
                     else if(yNum[i] < min_tresh && begin != -1){
                         end = i;
-                        if(wscnt > min_wscnt){//find a column //curspcnt - oldspcnt > 110
-                            int width = end - begin;
+                        if(wscnt > 4*average){//find a column //curspcnt - oldspcnt > 110
+                            int width = end - begin - wscnt + 5;
                             Mat temp = new Mat(origin,new Rect(begin,0,width,nHeight));
                             Mat t = new Mat();
                             temp.copyTo(t);
@@ -539,6 +576,7 @@ public class PictureHandle {
         List<Mat> ycutpoint = cutImginmode(origin,HPRO,"pieces");//得到了每一行图片的矩阵。
         int i = 0;
         for(Mat each : ycutpoint){
+            saveImg(filepath+"/"+(i++)+".png",each);
             List<Mat>  tmp = cutImginmode(each,VPRO,"pieces");
             for (Mat res: tmp) {
                 ret.add(res);
