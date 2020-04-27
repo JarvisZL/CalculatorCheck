@@ -161,6 +161,12 @@ public class PictureShow extends AppCompatActivity {
                         textindex + pair.first.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 textindex += pair.first.length();
             }
+            else if(pair.second.equals("Unqualified")){
+                //gray
+                spannableString.setSpan(new ForegroundColorSpan(Color.parseColor("#515A5A")), textindex,
+                        textindex + pair.first.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                textindex += pair.first.length();
+            }
         }
 
         textView.setText(spannableString);
