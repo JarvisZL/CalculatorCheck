@@ -19,12 +19,15 @@ import java.util.Arrays;
 public class ClassifierForHnd {
     private static final String LOG_TAG = "ClassifierForHnd";
 
-    private static final String MODEL_NAME = "USPS_cnn.tflite";
+    //tensorflowlite模型
+    private static final String MODEL_NAME = "USPS32_cnn.tflite";
 
     private static final int BATCH_SIZE = 1;
+    //数据规格
     private static final int IMG_HEIGHT = 56;
     private static final int IMG_WIDTH = 56;
     private static final int NUM_CHANNEL = 1;
+    //结果规模
     private static final int NUM_CLASSES = 10;
 
     private final Interpreter mInterpreter;

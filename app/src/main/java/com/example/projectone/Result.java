@@ -12,7 +12,14 @@ public class Result {
         mTimeCost = timeCost;
     }
 
-
+    /* 编码方式
+        0-9： 0-9
+        +： 10
+        -： 11
+        *： 12
+        /： 13
+        =： 14
+     */
     public String getchar(){
         if(mNumber < 10)
             return String.valueOf(mNumber);
@@ -29,12 +36,10 @@ public class Result {
         else
             return null;
     }
-
     public int getmNumber() { return mNumber; }
     public float getProbability() {
         return mProbability;
     }
-
     public long getTimeCost() {
         return mTimeCost;
     }

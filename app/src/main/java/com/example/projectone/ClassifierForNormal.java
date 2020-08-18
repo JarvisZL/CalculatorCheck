@@ -19,12 +19,15 @@ import java.util.Arrays;
 class ClassifierForNormal {
     private static final String LOG_TAG = "ClassifierForNormal";
 
-    private static final String MODEL_NAME = "normalinandroid_cnn.tflite";
+    //tensorflowlite模型
+    private static final String MODEL_NAME = "normalinandroid32_cnn.tflite";
 
     private static final int BATCH_SIZE = 1;
+    //数据规格
     private static final int IMG_HEIGHT = 28;
     private static final int IMG_WIDTH = 28;
     private static final int NUM_CHANNEL = 1;
+    //结果规模
     private static final int NUM_CLASSES = 15;
 
     private final Interpreter mInterpreter;

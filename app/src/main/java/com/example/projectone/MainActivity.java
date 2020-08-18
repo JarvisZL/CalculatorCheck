@@ -32,14 +32,14 @@ import java.io.IOException;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE = 1;
-    Button check,camera,choose;
+    Button check,camera,choose, rotation;
     ImageView image;
     File file;
 
     private static String filepath;
     private static final int TAKE_PHOTO = 200;
     private static final int CHOOSE_PHOTO = 100;
-    private static final String TAG="JARVIS IN MAIN";
+    private static final String TAG="HwmkCheck IN MAIN";
 
     static {
         if(!OpenCVLoader.initDebug()){
@@ -65,15 +65,17 @@ public class MainActivity extends AppCompatActivity {
         check  = findViewById(R.id.button3);
         image = findViewById(R.id.image);
         camera = findViewById(R.id.button2);
-        //Inner Storage in mobile
+        //相关图片存储的位置
         filepath = Environment.getExternalStorageDirectory().getPath();
-        filepath = filepath + "/ZLYTEST/" +"temp.png";
+        filepath = filepath + "/HmwkCheck/" +"temp.png";
 
+        //拍照按钮
         camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent();
                 intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
+                //将拍摄的图片存入filepath中
                 file = new File(filepath);
                 try {
                    if(file.exists()) {
@@ -83,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
                 }catch (IOException e){
                     e.printStackTrace();
                 }
+
+                //将图片转化为imguri
                 Uri imguri;
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){//android 7
                     imguri = FileProvider.getUriForFile(MainActivity.this,"com.example.projectone.fileprovider",file);
@@ -95,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //从相册中选择图片
         choose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -103,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
+        //开始执行识别
         check.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -124,9 +129,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //旋转目标图片
+        rotation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(image.getDrawable() == null){
+                    Log.i(TAG,"null");
+                }
+                else{
+                    Log.i(TAG,"not null");
+                    Bitmap bitmap = ((BitmapDrawable) image.getDrawable()).getBitmap();
+                    bitmap = PictureHandle.rotateBitmap(bitmap,90);
+                    image.setImageBitmap(bitmap);
+                }
+            }
+        });
     }
 
 
+    //camera和choose按钮返回后相关处理
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
             super.onActivityResult(requestCode,resultCode,data);
@@ -150,7 +171,8 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
-               }else if(requestCode == CHOOSE_PHOTO){
+               }
+               else if(requestCode == CHOOSE_PHOTO){
                    Bitmap bitmap = null;
                    try {
                        Uri uri = data.getData();

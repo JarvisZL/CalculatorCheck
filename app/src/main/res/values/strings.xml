@@ -9,4 +9,5 @@
     <string name="afterclip">AfterClip</string>
     <string name="afterbinary">AfterBinarization</string>
     <string name="afterresize">AfterResize</string>
+    <string name="Rotation">Rotate</string>
 </resources>

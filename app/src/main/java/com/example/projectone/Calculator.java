@@ -11,6 +11,7 @@ public class Calculator {
 
 
     private static int calculateleft(List<Pair<String,String>> items){
+        //用MIN_VALUE作为格式出错的标识码，有待改善
         if(items.size() == 0){
             return Integer.MIN_VALUE;
         }
@@ -21,7 +22,8 @@ public class Calculator {
         }
 
         int multiindex = -1,divindex = -1;
-        //从右到左遍历寻找运算符
+        //从右到左遍历寻找优先级最低的运算符
+        //递归求解
         for(int i = items.size() - 1; i >= 0; --i){
             if(items.get(i).second.equals("op")){
                 if(items.get(i).first.equals("+")){
@@ -41,6 +43,7 @@ public class Calculator {
                 }
             }
         }
+        //*号在更右边，优先
         if(multiindex > divindex){
             return calculateleft(items.subList(0,multiindex)) * calculateleft(items.subList(multiindex+1,items.size()));
         }
@@ -52,106 +55,72 @@ public class Calculator {
 
     private static String calculate(List<Pair<String,String>> items){
         for(int i = 0; i < items.size(); ++i){
+            //'='号
             if(items.get(i).second.equals("op") && items.get(i).first.equals("=")){
+                //'='号已经是这个算式中的最后一个项，说明没有结果
                 if(i == items.size() - 1){
                     return "Missing answer";
                 }
-                if(!items.get(i+1).second.equals("num")){
-                    return "Unqualified";
+                //'='号右边的不是数字，不符合规定的格式
+                if(i == items.size() - 2 && !items.get(i+1).second.equals("num")){
+                    return "Not a equation";
                 }
-
-                int rightans = Integer.valueOf(items.get(i+1).first);
+                //rightans存储了等号右边的数字的值，防止出现由于识别错误导致溢出行为，使用Long
+                long rightans = Long.valueOf(items.get(i+1).first);
+                //超过假设的最大值，结果错误
+                if(rightans > Integer.MAX_VALUE)
+                    return "Wrong";
+                //将等号左侧的部分复制到leftitems
                 List<Pair<String,String>> leftitems = new ArrayList<>();
                 for(int j = 0; j < i; ++j){
                     leftitems.add(items.get(j));
                 }
+                //调用calculateleft函数计算
                 int leftans = calculateleft(leftitems);
                 if(leftans == Integer.MIN_VALUE)
-                    return "Unqualified";
+                    return "Not a equation";
                 if(leftans == rightans)
                     return "Right";
                 else
                     return "Wrong";
             }
         }
-        return "Unqualified";
-    }
-
-    private static String simplecalculate(List<Pair<String,String>> items){
-        //simple demo
-        int ans = 0,cur;
-        String curop = null,oldop = null;
-        boolean ansflag = false,missingflag = false;
-        for(int i = 0; i < items.size(); ++i){
-            if(i == 0){
-                if(items.get(i).second.equals("op"))
-                    break;
-                ans = Integer.valueOf(items.get(i).first);
-            }
-            else{
-                String type = items.get(i).second;
-                if(type.equals("num")){
-                    oldop = null;
-                    cur = Integer.valueOf(items.get(i).first);
-                    if(curop == null)
-                        break;
-                    if(curop.equals("+"))
-                        ans = ans + cur;
-                    else if(curop.equals("-"))
-                        ans = ans - cur;
-                    else if(curop.equals("*"))
-                        ans = ans * cur;
-                    else if(curop.equals("/"))
-                        ans = ans / cur;
-                    else if(curop.equals("=")){
-                        ansflag = ans == cur;
-                        break;
-                    }
-
-                }
-                else if(type.equals("op")){
-                    if(oldop != null)
-                        break;
-                    oldop = curop;
-                    curop = items.get(i).first;
-                    if(curop.equals("=") && i == items.size() - 1){
-                            missingflag = true;
-                            break;
-                    }
-                }
-            }
-        }
-        if(missingflag)
-            return "Missing answer";
-        if(ansflag)
-            return "Right";
-        else
-            return "Wrong";
+        //没有识别出'='号，不符合规定格式
+        return "Not a equation";
     }
 
     private static String getAns(String text){
         int len = text.length();
+        //用来记录识别出来的每一个算式中各个字符的类型，从而拼接。
+        //数字为pair<numbervalue,"num">
+        //运算符为pair<operator,"op">
         List<Pair<String,String>> items = new ArrayList<>();
         int index;
+        //目前的字符
         char c;
         StringBuilder str;
-        boolean flag, lastflag;
+        boolean is_num, lastflag;
+        //遍历
         for(index = 0; index < len;){
             c = text.charAt(index);
             str = new StringBuilder();
-            flag = false;
+            //is_num用于标记是否是数字
+            is_num = false;
+            //lastflag用于标记是否已经到了结尾
             lastflag = false;
+
             while(c >= 48 && c <= 57){
-                flag = true;
+                is_num = true;
                 str.append(c);
                 index++;
+                //已经到了当前算式末尾
                 if(index >= len){
                     lastflag = true;
                     break;
                 }
                 c = text.charAt(index);
             }
-            if(flag) {
+            if(is_num) {
                 items.add(new Pair<>(String.valueOf(str), "num"));
             }
             if(!lastflag){
@@ -159,9 +128,12 @@ public class Calculator {
             }
             index++;
         }
+
+        //拼接完成后调用calculate计算
         return Calculator.calculate(items);
     }
 
+    //提供的接口
     public static String Check(String text){
         if(text.equals("")) return "";
         return Calculator.getAns(text);
